@@ -23,16 +23,16 @@ if requirements_file.exists():
 
 setup(
     name="mercedes-obd-scanner",
-    version="0.1.0",
+    version="3.1.0",
     author="Manus & Claude AI",
     author_email="support@manus.im",
-    description="OBD-II diagnostic scanner for Mercedes-Benz W222 (S-Class 2013-2020)",
+    description="Production-Ready AI-Powered Automotive Diagnostic Platform for Mercedes-Benz W222",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/username/mercedes-obd-scanner",
+    url="https://github.com/pavelraiden/mercedes-w222-obd-scanner",
     packages=find_packages(),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: End Users/Desktop",
         "Topic :: System :: Hardware :: Hardware Drivers",
         "License :: OSI Approved :: MIT License",
