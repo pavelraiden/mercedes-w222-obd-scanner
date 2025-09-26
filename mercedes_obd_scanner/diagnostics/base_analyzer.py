@@ -34,9 +34,8 @@ class BaseAnalyzer(ABC):
             if all(param in data for param in required_params):
                 try:
                     # Safe condition evaluation - replace eval with specific condition checks
-                    try:
-                        # Parse simple conditions like "data['param'] > value"
-                        if self._evaluate_condition_safely(condition, data):
+                    # Parse simple conditions like "data['param'] > value"
+                    if self._evaluate_condition_safely(condition, data):
                         total_wear_increase += rule["wear_increase"]
                         issues_found.append(
                             {

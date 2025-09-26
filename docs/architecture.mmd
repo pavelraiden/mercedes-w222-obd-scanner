@@ -1,0 +1,28 @@
+graph TD
+    subgraph User Interface
+        A[Web Dashboard (React)] --> B{API Gateway}
+    end
+
+    subgraph Backend Services
+        B --> C[FastAPI Application]
+        C --> D[Database (PostgreSQL)]
+        C --> E[Cache (Redis)]
+        C --> F[AI/ML Services]
+    end
+
+    subgraph Data Collection
+        G[Raspberry Pi Client] -- WebSocket --> C
+        G -- OBD-II/UDS --> H[Vehicle CAN Bus]
+    end
+
+    subgraph Infrastructure
+        I[Docker] --> J[Nginx]
+        I --> C
+        I --> D
+        I --> E
+        K[Prometheus] --> C
+        L[Grafana] --> K
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style G fill:#ccf,stroke:#333,stroke-width:2px

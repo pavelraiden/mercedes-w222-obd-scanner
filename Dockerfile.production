@@ -1,0 +1,78 @@
+# Multi-stage Dockerfile for Production Mercedes W222 OBD Scanner
+
+# Stage 1: Build React frontend
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy React app
+COPY mercedes-web-dashboard/package*.json ./
+COPY mercedes-web-dashboard/pnpm-lock.yaml ./
+
+# Install dependencies
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
+
+# Copy source code and build
+COPY mercedes-web-dashboard/ .
+RUN pnpm run build
+
+# Stage 2: Python backend
+FROM python:3.11-slim AS backend
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for production
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    supervisor \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash mercedes && \
+    chown -R mercedes:mercedes /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install production WSGI server
+RUN pip install gunicorn uvicorn[standard] redis celery
+
+# Copy application code
+COPY --chown=mercedes:mercedes . .
+
+# Copy built frontend from previous stage
+COPY --from=frontend-builder /app/frontend/dist ./web_app/static/
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs /app/ml/models && \
+    chown -R mercedes:mercedes /app/data /app/logs /app/ml/models
+
+# Copy configuration files
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/gunicorn.conf.py /app/gunicorn.conf.py
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV ENVIRONMENT=production
+ENV WORKERS=4
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose ports
+EXPOSE 80 8000
+
+# Switch to non-root user
+USER mercedes
+
+# Start services with supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
