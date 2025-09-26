@@ -1,28 +1,48 @@
 graph TD
-    subgraph User Interface
-        A[Web Dashboard (React)] --> B{API Gateway}
+    subgraph "User Interaction"
+        User(("End User")) --> WebDashboard["Web Dashboard (React)"]
+        User --> RPiDisplay["Raspberry Pi Display"]
     end
 
-    subgraph Backend Services
-        B --> C[FastAPI Application]
-        C --> D[Database (PostgreSQL)]
-        C --> E[Cache (Redis)]
-        C --> F[AI/ML Services]
+    subgraph "Infrastructure & Web Tier"
+        WebDashboard -- HTTPS --> Nginx["Nginx Reverse Proxy"]
+        Nginx --> Gunicorn["Gunicorn WSGI"]
+        Gunicorn --> FastAPI["FastAPI Application"]
     end
 
-    subgraph Data Collection
-        G[Raspberry Pi Client] -- WebSocket --> C
-        G -- OBD-II/UDS --> H[Vehicle CAN Bus]
+    subgraph "Core Backend Services"
+        FastAPI --> Auth["Authentication (JWT)"]
+        FastAPI --> Payments["Payments (Stripe)"]
+        FastAPI --> Subscriptions["Subscription Logic"]
+        FastAPI --> WebSocket["WebSocket Gateway"]
+        FastAPI --> DataAccess["Data Access Layer"]
     end
 
-    subgraph Infrastructure
-        I[Docker] --> J[Nginx]
-        I --> C
-        I --> D
-        I --> E
-        K[Prometheus] --> C
-        L[Grafana] --> K
+    subgraph "Data & AI"
+        DataAccess --> DB["PostgreSQL DB"]
+        DataAccess --> Cache["Redis Cache"]
+        FastAPI --> AIDiagnostics["AI Diagnostics Service"]
+        AIDiagnostics --> Claude["Claude API"]
+        AIDiagnostics --> AnomalyModel["Anomaly Detection Model"]
+        MLOps["ML Self-Learning"] -- Retrains --> AnomalyModel
+        MLOps -- Reads Data --> DB
     end
 
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style G fill:#ccf,stroke:#333,stroke-width:2px
+    subgraph "Vehicle Interface"
+        RPiClient["Raspberry Pi Client"] -- OBD-II --> Vehicle["Vehicle CAN Bus"]
+        RPiClient -- Secure WebSocket --> WebSocket
+    end
+
+    subgraph "Operations"
+        CICD["CI/CD (GitHub Actions)"] --> Docker["Docker Builds"]
+        Docker --> Nginx
+        Docker --> FastAPI
+        Docker --> DB
+        Monitoring["Monitoring (Prometheus/Grafana)"] --> FastAPI
+        Backup["Backup System"] --> DB
+    end
+
+    style User fill:#cde,stroke:#333
+    style WebDashboard fill:#f9f,stroke:#333
+    style RPiDisplay fill:#ccf,stroke:#333
+    style FastAPI fill:#9f9,stroke:#333
