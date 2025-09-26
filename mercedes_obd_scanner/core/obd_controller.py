@@ -30,9 +30,9 @@ class OBDController:
         for callback in self.data_callbacks:
             callback(parameter, value, unit)
 
-    def _on_status(self, status: str):
+    def _on_status(self, status: str, message: str = ""):
         for callback in self.status_callbacks:
-            callback(status)
+            callback(status, message)
 
     def get_available_protocols(self) -> List[str]:
         return list(self.protocol_handlers.keys())
@@ -49,7 +49,7 @@ class OBDController:
 
         handler_class = self.protocol_handlers.get(protocol)
         if not handler_class:
-            self._on_status("error")
+            self._on_status("error", f"Unsupported protocol: {protocol}")
             raise ValueError(f"Unsupported protocol: {protocol}")
 
         self.active_handler = handler_class(self._on_data, self._on_status)

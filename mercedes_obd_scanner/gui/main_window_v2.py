@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from .theme_manager import theme_manager, ThemedFrame, ThemedButton
 from .icon_manager import get_action_icon, icon_manager
 from .app_controller import AppController
-from .panels import ConnectionPanel, MonitoringPanel
+from .panels import ConnectionPanel, MonitoringPanel, PredictivePanel, TripHistoryPanel
 
 
 class StatusBar(ThemedFrame):
@@ -277,38 +277,20 @@ class MercedesOBDScannerV2:
         monitoring_tab = self.tabview.add("📊 Мониторинг")
         self.monitoring_panel = MonitoringPanel(monitoring_tab, self.app_controller)
         self.monitoring_panel.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Вкладка быстрой диагностики
-        quick_diag_tab = self.tabview.add("⚡ Быстрая диагностика")
-        self._create_quick_diagnostic_tab(quick_diag_tab)
-        
-        # Вкладка расширенной диагностики
-        advanced_diag_tab = self.tabview.add("🔧 Диагностика")
-        self._create_advanced_diagnostic_tab(advanced_diag_tab)
+
+        # Вкладка предиктивной диагностики
+        predictive_tab = self.tabview.add("🤖 Предиктивная диагностика")
+        self.predictive_panel = PredictivePanel(predictive_tab, self.app_controller)
+        self.predictive_panel.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Вкладка истории поездок
+        history_tab = self.tabview.add("📜 История поездок")
+        self.trip_history_panel = TripHistoryPanel(history_tab, self.app_controller)
+        self.trip_history_panel.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Вкладка настроек
         settings_tab = self.tabview.add("⚙️ Настройки")
         self._create_settings_tab(settings_tab)
-        
-    def _create_quick_diagnostic_tab(self, parent):
-        """Создание вкладки быстрой диагностики"""
-        placeholder = ctk.CTkLabel(
-            parent,
-            text="Быстрая диагностика W222\n(В разработке)",
-            font=ctk.CTkFont(size=16),
-            text_color=theme_manager.get_color("text_secondary")
-        )
-        placeholder.pack(expand=True)
-        
-    def _create_advanced_diagnostic_tab(self, parent):
-        """Создание вкладки расширенной диагностики"""
-        placeholder = ctk.CTkLabel(
-            parent,
-            text="Расширенная диагностика\n(В разработке)",
-            font=ctk.CTkFont(size=16),
-            text_color=theme_manager.get_color("text_secondary")
-        )
-        placeholder.pack(expand=True)
         
     def _create_settings_tab(self, parent):
         """Создание вкладки настроек"""
@@ -388,7 +370,7 @@ class MercedesOBDScannerV2:
         """Обработка закрытия приложения"""
         try:
             # Очистка ресурсов контроллера
-            self.app_controller.cleanup()
+            self.app_controller.shutdown()
             
             # Сохранение настроек темы
             theme_manager.save_settings()
@@ -419,3 +401,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

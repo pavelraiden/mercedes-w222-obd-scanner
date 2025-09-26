@@ -15,15 +15,15 @@ class DemoProtocolHandler(ProtocolHandler):
         self.start_time = time.time()
 
     def connect(self, port: str, **kwargs) -> bool:
-        self.status_callback("connecting")
+        self.status_callback("connecting", "Connecting in demo mode...")
         time.sleep(1)
         self.is_connected = True
-        self.status_callback("connected")
+        self.status_callback("connected", "Successfully connected in demo mode.")
         return True
 
     def disconnect(self):
         self.is_connected = False
-        self.status_callback("disconnected")
+        self.status_callback("disconnected", "Disconnected from demo mode.")
 
     def update_data(self):
         if not self.is_connected:
@@ -38,12 +38,12 @@ class DemoProtocolHandler(ProtocolHandler):
         throttle = 30 + 10 * random.random()
         pressure = 101.3 + 2 * random.random()
 
-        self.data_callback("engine_rpm", rpm, "об/мин")
-        self.data_callback("vehicle_speed", speed, "км/ч")
-        self.data_callback("engine_temp", temp, "°C")
-        self.data_callback("fuel_level", fuel, "%")
-        self.data_callback("throttle_position", throttle, "%")
-        self.data_callback("intake_pressure", pressure, "кПа")
+        self.data_callback("ENGINE_RPM", rpm, "об/мин")
+        self.data_callback("VEHICLE_SPEED", speed, "км/ч")
+        self.data_callback("COOLANT_TEMP", temp, "°C")
+        self.data_callback("FUEL_LEVEL", fuel, "%")
+        self.data_callback("THROTTLE_POS", throttle, "%")
+        self.data_callback("INTAKE_PRESSURE", pressure, "кПа")
 
     def get_diagnostic_codes(self) -> List[Dict[str, Any]]:
         # Имитация кодов ошибок
@@ -54,13 +54,6 @@ class DemoProtocolHandler(ProtocolHandler):
                 "status": "active",
                 "system": "engine",
                 "severity": "error"
-            },
-            {
-                "code": "U0121",
-                "description": "Lost Communication With Anti-Lock Brake System (ABS) Control Module",
-                "status": "pending",
-                "system": "abs",
-                "severity": "warning"
             }
         ]
 
@@ -70,3 +63,4 @@ class DemoProtocolHandler(ProtocolHandler):
     @staticmethod
     def get_available_ports() -> List[str]:
         return ["DEMO"]
+

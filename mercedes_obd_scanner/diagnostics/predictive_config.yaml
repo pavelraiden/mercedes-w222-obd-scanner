@@ -1,0 +1,18 @@
+components:
+  - type: "engine"
+    name: "Двигатель"
+    rules:
+      - condition: "COOLANT_TEMP > 105 and ENGINE_LOAD > 50"
+        description: "Повышенная температура охлаждающей жидкости при высокой нагрузке."
+        wear_increase: 20
+      - condition: "RPM > 4500"
+        description: "Высокие обороты двигателя."
+        wear_increase: 5
+
+  - type: "transmission"
+    name: "Трансмиссия"
+    rules:
+      - condition: "TRANSMISSION_OIL_TEMP > 110"
+        description: "Перегрев масла в трансмиссии."
+        wear_increase: 30
+
