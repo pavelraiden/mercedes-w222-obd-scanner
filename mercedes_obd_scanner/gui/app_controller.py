@@ -1,5 +1,5 @@
 """
-Главный контроллер приложения Mercedes OBD Scanner
+Главный контроллер приложения Mercedes OBD Scanner v2.0
 """
 import threading
 import time
@@ -57,7 +57,7 @@ class AppController:
     
     def __init__(self):
         # Инициализация компонентов
-        self.obd_controller = OBDController(demo_mode=True)
+        self.obd_controller = OBDController()
         self.config_manager = ConfigManager()
         
         # Состояние приложения
@@ -173,13 +173,13 @@ class AppController:
             return "ok"
             
     # Методы подключения
-    def connect_obd(self, port: str = None) -> bool:
+    def connect_obd(self, protocol: str, port: str) -> bool:
         """Подключение к OBD сканеру"""
         try:
             self.connection_status = ConnectionStatus.CONNECTING
             self.notify_observers('connection_status', self.connection_status)
             
-            success = self.obd_controller.connect(port)
+            success = self.obd_controller.connect(protocol, port)
             
             if success:
                 self.connection_status = ConnectionStatus.CONNECTED
@@ -207,9 +207,13 @@ class AppController:
         except Exception as e:
             self.notify_observers('error', f"Ошибка отключения: {e}")
             
-    def get_available_ports(self) -> List[str]:
-        """Получение списка доступных портов"""
-        return self.obd_controller.get_available_ports()
+    def get_available_protocols(self) -> List[str]:
+        """Получение списка доступных протоколов"""
+        return self.obd_controller.get_available_protocols()
+
+    def get_available_ports(self, protocol: str) -> List[str]:
+        """Получение списка доступных портов для протокола"""
+        return self.obd_controller.get_available_ports(protocol)
         
     # Методы работы с данными
     def _start_data_thread(self):
