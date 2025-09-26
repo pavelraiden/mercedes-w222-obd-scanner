@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercedes W222 OBD Scanner</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mercedes W222 OBD Scanner</h1>
+            <div class="status-indicator" id="status-indicator">
+                <span class="status-dot disconnected"></span>
+                <span id="status-text">Отключено</span>
+            </div>
+        </header>
+
+        <nav class="tab-navigation">
+            <button class="tab-button active" data-tab="connection">Подключение</button>
+            <button class="tab-button" data-tab="monitoring">Мониторинг</button>
+            <button class="tab-button" data-tab="diagnostics">Диагностика</button>
+            <button class="tab-button" data-tab="trips">История поездок</button>
+            <button class="tab-button" data-tab="ai-analysis">AI Анализ</button>
+        </nav>
+
+        <main>
+            <!-- Connection Tab -->
+            <div class="tab-content active" id="connection-tab">
+                <div class="card">
+                    <h2>Подключение к OBD-сканеру</h2>
+                    <div class="form-group">
+                        <label for="protocol-select">Протокол:</label>
+                        <select id="protocol-select">
+                            <option value="DEMO">DEMO (Демонстрация)</option>
+                            <option value="OBD">OBD-II</option>
+                            <option value="UDS">UDS (Mercedes)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="port-select">Порт:</label>
+                        <select id="port-select">
+                            <option value="DEMO">DEMO</option>
+                        </select>
+                        <button id="refresh-ports">Обновить</button>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicle-id">VIN автомобиля (опционально):</label>
+                        <input type="text" id="vehicle-id" placeholder="WDD2220391A123456">
+                    </div>
+                    <div class="button-group">
+                        <button id="connect-btn" class="btn-primary">Подключиться</button>
+                        <button id="disconnect-btn" class="btn-secondary" disabled>Отключиться</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitoring Tab -->
+            <div class="tab-content" id="monitoring-tab">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Двигатель</h3>
+                        <div class="parameter-grid">
+                            <div class="parameter">
+                                <span class="label">Температура ОЖ:</span>
+                                <span class="value" id="coolant-temp">--°C</span>
+                            </div>
+                            <div class="parameter">
+                                <span class="label">Давление масла:</span>
+                                <span class="value" id="oil-pressure">-- бар</span>
+                            </div>
+                            <div class="parameter">
+                                <span class="label">Обороты:</span>
+                                <span class="value" id="engine-rpm">-- об/мин</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Трансмиссия</h3>
+                        <div class="parameter-grid">
+                            <div class="parameter">
+                                <span class="label">Температура ATF:</span>
+                                <span class="value" id="trans-temp">--°C</span>
+                            </div>
+                            <div class="parameter">
+                                <span class="label">Передача:</span>
+                                <span class="value" id="current-gear">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Пневмоподвеска</h3>
+                        <div class="parameter-grid">
+                            <div class="parameter">
+                                <span class="label">Давление FL:</span>
+                                <span class="value" id="air-pressure-fl">-- бар</span>
+                            </div>
+                            <div class="parameter">
+                                <span class="label">Давление FR:</span>
+                                <span class="value" id="air-pressure-fr">-- бар</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card chart-container">
+                        <h3>График параметров</h3>
+                        <canvas id="parameters-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnostics Tab -->
+            <div class="tab-content" id="diagnostics-tab">
+                <div class="card">
+                    <h2>Предиктивная диагностика</h2>
+                    <div id="diagnostic-results">
+                        <p>Подключитесь к автомобилю для начала диагностики...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Обнаружение аномалий</h2>
+                    <div id="anomaly-results">
+                        <p>Система машинного обучения анализирует данные...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trips Tab -->
+            <div class="tab-content" id="trips-tab">
+                <div class="card">
+                    <h2>История поездок</h2>
+                    <div id="trip-history">
+                        <p>Загрузка истории поездок...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Analysis Tab -->
+            <div class="tab-content" id="ai-analysis-tab">
+                <div class="card">
+                    <h2>AI Анализ поездок</h2>
+                    <div id="ai-analysis-results">
+                        <p>AI анализ будет доступен после завершения поездки...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
