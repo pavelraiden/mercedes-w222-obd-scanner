@@ -197,9 +197,9 @@ class TestDatabaseManagerFixed:
         stats = temp_db.get_database_stats()
 
         assert isinstance(stats, dict)
-        assert stats.get("parameters_count", 0) >= 10
+        assert stats.get("obd_parameters_count", 0) >= 10
         assert stats.get("sessions_count", 0) >= 1
-        assert stats.get("anomalies_count", 0) >= 1
+        assert stats.get("anomaly_records_count", 0) >= 1
 
 
 class TestEnhancedAnomalyDetectorFixed:
