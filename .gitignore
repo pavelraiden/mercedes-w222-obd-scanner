@@ -156,3 +156,27 @@ screenshots/
 obd_logs/
 diagnostic_reports/
 user_configs/
+
+# Node.js specific
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+
+# React/Vite specific
+.vite/
+dist-ssr/
+*.local
+
+# Package manager lock files (keep package.json but ignore locks for now)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Web dashboard specific
+mercedes-web-dashboard/node_modules/
+mercedes-web-dashboard/dist/
+mercedes-web-dashboard/.vite/

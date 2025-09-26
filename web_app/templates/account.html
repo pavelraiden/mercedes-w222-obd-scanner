@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - Mercedes W222 OBD Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <style>
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+        .subscription-card {
+            transition: all 0.3s ease;
+        }
+        .subscription-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .subscription-current {
+            border: 2px solid #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">Mercedes W222 OBD Scanner</h1>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="/dashboard" class="text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Dashboard</a>
+                        <a href="/trips" class="text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Trips</a>
+                        <a href="/diagnostics" class="text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Diagnostics</a>
+                        <a href="/account" class="text-blue-600 border-b-2 border-blue-600 px-1 pt-1 text-sm font-medium">Account</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button class="bg-gray-100 p-2 rounded-full hover:bg-gray-200">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Account Settings</h1>
+            <p class="text-gray-600 mt-2">Manage your account, subscription, and security settings</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 mb-8">
+            <nav class="-mb-px flex space-x-8">
+                <button id="tab-profile" class="tab-active py-2 px-1 border-b-2 font-medium text-sm" onclick="switchTab('profile')">
+                    Profile
+                </button>
+                <button id="tab-subscription" class="py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" onclick="switchTab('subscription')">
+                    Subscription
+                </button>
+                <button id="tab-devices" class="py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" onclick="switchTab('devices')">
+                    Devices
+                </button>
+                <button id="tab-security" class="py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700" onclick="switchTab('security')">
+                    Security
+                </button>
+            </nav>
+        </div>
+
+        <!-- Profile Tab -->
+        <div id="content-profile" class="tab-content">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Profile Information</h2>
+                
+                <form class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input type="text" id="first-name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="John">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input type="text" id="last-name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="Doe">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                        <input type="email" id="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="john.doe@example.com">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                        <input type="tel" id="phone" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="+1 (555) 123-4567">
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Subscription Tab -->
+        <div id="content-subscription" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Current Subscription -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Current Subscription</h2>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-semibold text-blue-600">Professional Plan</h3>
+                            <p class="text-gray-600">Advanced diagnostics and AI analysis</p>
+                            <p class="text-sm text-gray-500 mt-1">Renews on March 15, 2026</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-gray-900">$29.99</p>
+                            <p class="text-sm text-gray-500">per month</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Plans -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-6">Available Plans</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Basic Plan -->
+                        <div class="subscription-card border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Basic</h3>
+                            <p class="text-gray-600 text-sm mt-1">Essential OBD monitoring</p>
+                            <div class="mt-4">
+                                <span class="text-3xl font-bold text-gray-900">$9.99</span>
+                                <span class="text-gray-500">/month</span>
+                            </div>
+                            <ul class="mt-4 space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Real-time monitoring
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Basic diagnostics
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Trip logging
+                                </li>
+                            </ul>
+                            <button class="w-full mt-6 bg-gray-100 text-gray-700 py-2 rounded-md hover:bg-gray-200">
+                                Current Plan
+                            </button>
+                        </div>
+
+                        <!-- Professional Plan -->
+                        <div class="subscription-card subscription-current border rounded-lg p-6">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-900">Professional</h3>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Current</span>
+                            </div>
+                            <p class="text-gray-600 text-sm mt-1">Advanced diagnostics and AI</p>
+                            <div class="mt-4">
+                                <span class="text-3xl font-bold text-gray-900">$29.99</span>
+                                <span class="text-gray-500">/month</span>
+                            </div>
+                            <ul class="mt-4 space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Everything in Basic
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    AI-powered analysis
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Predictive maintenance
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Advanced reporting
+                                </li>
+                            </ul>
+                            <button class="w-full mt-6 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                                Manage Subscription
+                            </button>
+                        </div>
+
+                        <!-- Enterprise Plan -->
+                        <div class="subscription-card border rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Enterprise</h3>
+                            <p class="text-gray-600 text-sm mt-1">Full fleet management</p>
+                            <div class="mt-4">
+                                <span class="text-3xl font-bold text-gray-900">$99.99</span>
+                                <span class="text-gray-500">/month</span>
+                            </div>
+                            <ul class="mt-4 space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Everything in Professional
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Multiple vehicles
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    Team management
+                                </li>
+                                <li class="flex items-center">
+                                    <i data-lucide="check" class="w-4 h-4 text-green-500 mr-2"></i>
+                                    API access
+                                </li>
+                            </ul>
+                            <button class="w-full mt-6 bg-gray-100 text-gray-700 py-2 rounded-md hover:bg-gray-200">
+                                Upgrade
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices Tab -->
+        <div id="content-devices" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">Connected Devices</h2>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                        Add Device
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Device 1 -->
+                    <div class="border rounded-lg p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-2 bg-green-100 rounded-lg">
+                                <i data-lucide="smartphone" class="w-6 h-6 text-green-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Mercedes Scanner Pi #1</h3>
+                                <p class="text-sm text-gray-600">Raspberry Pi 4 - Last seen 2 minutes ago</p>
+                                <p class="text-xs text-gray-500">Device ID: MSP-001-ABC123</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Online
+                            </span>
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Device 2 -->
+                    <div class="border rounded-lg p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-2 bg-gray-100 rounded-lg">
+                                <i data-lucide="smartphone" class="w-6 h-6 text-gray-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900">Mercedes Scanner Pi #2</h3>
+                                <p class="text-sm text-gray-600">Raspberry Pi 4 - Last seen 2 hours ago</p>
+                                <p class="text-xs text-gray-500">Device ID: MSP-002-DEF456</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Offline
+                            </span>
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div id="content-security" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Password Change -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-6">Change Password</h2>
+                    
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Current Password</label>
+                            <input type="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">New Password</label>
+                            <input type="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                            <input type="password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                                Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Two-Factor Authentication -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-medium text-gray-900">Two-Factor Authentication</h2>
+                            <p class="text-sm text-gray-600">Add an extra layer of security to your account</p>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-sm text-gray-500 mr-3">Disabled</span>
+                            <button id="mfa-toggle" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" onclick="toggleMFA()">
+                                <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="mfa-setup" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="font-medium text-gray-900 mb-3">Scan QR Code</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg text-center">
+                                    <canvas id="qr-code" class="mx-auto"></canvas>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Scan this QR code with your authenticator app</p>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-900 mb-3">Enter Verification Code</h3>
+                                <input type="text" placeholder="000000" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-center text-lg tracking-widest">
+                                <button class="w-full mt-4 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+                                    Verify & Enable
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login Sessions -->
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-6">Active Sessions</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="p-2 bg-green-100 rounded-lg">
+                                    <i data-lucide="monitor" class="w-5 h-5 text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">Current Session</p>
+                                    <p class="text-sm text-gray-600">Chrome on macOS - 192.168.1.100</p>
+                                    <p class="text-xs text-gray-500">Active now</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Current
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="p-2 bg-blue-100 rounded-lg">
+                                    <i data-lucide="smartphone" class="w-5 h-5 text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">Mobile Session</p>
+                                    <p class="text-sm text-gray-600">Safari on iOS - 192.168.1.101</p>
+                                    <p class="text-xs text-gray-500">2 hours ago</p>
+                                </div>
+                            </div>
+                            <button class="text-red-600 hover:text-red-800 text-sm">
+                                Revoke
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                tab.classList.remove('tab-active');
+                tab.classList.add('py-2', 'px-1', 'border-b-2', 'border-transparent', 'font-medium', 'text-sm', 'text-gray-500', 'hover:text-gray-700');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            
+            // Add active class to selected tab
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            activeTab.classList.add('tab-active');
+            activeTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+        }
+
+        // MFA toggle functionality
+        function toggleMFA() {
+            const toggle = document.getElementById('mfa-toggle');
+            const setup = document.getElementById('mfa-setup');
+            const span = toggle.querySelector('span');
+            
+            if (toggle.classList.contains('bg-gray-200')) {
+                // Enable MFA
+                toggle.classList.remove('bg-gray-200');
+                toggle.classList.add('bg-blue-600');
+                span.classList.remove('translate-x-0');
+                span.classList.add('translate-x-5');
+                setup.classList.remove('hidden');
+                
+                // Generate QR code
+                generateQRCode();
+            } else {
+                // Disable MFA
+                toggle.classList.remove('bg-blue-600');
+                toggle.classList.add('bg-gray-200');
+                span.classList.remove('translate-x-5');
+                span.classList.add('translate-x-0');
+                setup.classList.add('hidden');
+            }
+        }
+
+        // Generate QR code for MFA setup
+        function generateQRCode() {
+            const canvas = document.getElementById('qr-code');
+            const secret = 'JBSWY3DPEHPK3PXP'; // This would be generated server-side
+            const issuer = 'Mercedes W222 OBD Scanner';
+            const user = 'john.doe@example.com';
+            const otpauth = `otpauth://totp/${issuer}:${user}?secret=${secret}&issuer=${issuer}`;
+            
+            QRCode.toCanvas(canvas, otpauth, {
+                width: 200,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default tab
+            switchTab('profile');
+        });
+    </script>
+</body>
+</html>

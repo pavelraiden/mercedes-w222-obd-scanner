@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercedes W222 OBD Scanner - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .status-online { color: #10b981; }
+        .status-offline { color: #ef4444; }
+        .status-warning { color: #f59e0b; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-gray-900">Mercedes W222 OBD Scanner</h1>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="#" class="text-blue-600 border-b-2 border-blue-600 px-1 pt-1 text-sm font-medium">Dashboard</a>
+                        <a href="#" class="text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Trips</a>
+                        <a href="#" class="text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Diagnostics</a>
+                        <a href="#" class="text-gray-500 hover:text-gray-700 px-1 pt-1 text-sm font-medium">Settings</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div id="connection-status" class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full status-offline pulse-animation"></div>
+                            <span class="text-sm text-gray-600">Connecting...</span>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <button class="bg-gray-100 p-2 rounded-full hover:bg-gray-200">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Vehicle Status -->
+            <div class="bg-white rounded-lg shadow card-hover p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i data-lucide="car" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Vehicle Status</p>
+                        <p id="vehicle-status" class="text-2xl font-semibold text-gray-900">Healthy</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Engine RPM -->
+            <div class="bg-white rounded-lg shadow card-hover p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i data-lucide="gauge" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Engine RPM</p>
+                        <p id="engine-rpm" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speed -->
+            <div class="bg-white rounded-lg shadow card-hover p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <i data-lucide="zap" class="w-6 h-6 text-yellow-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Speed</p>
+                        <p id="vehicle-speed" class="text-2xl font-semibold text-gray-900">0 km/h</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fuel Efficiency -->
+            <div class="bg-white rounded-lg shadow card-hover p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i data-lucide="droplets" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Fuel Efficiency</p>
+                        <p id="fuel-efficiency" class="text-2xl font-semibold text-gray-900">-- L/100km</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Real-time Parameters Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Real-time Parameters</h3>
+                    <div class="flex space-x-2">
+                        <button id="chart-rpm" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">RPM</button>
+                        <button id="chart-speed" class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Speed</button>
+                        <button id="chart-load" class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Load</button>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="realtime-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Engine Health Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Engine Health</h3>
+                <div class="h-64">
+                    <canvas id="health-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Information Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Live Parameters -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Live Parameters</h3>
+                <div id="live-parameters" class="space-y-3">
+                    <!-- Parameters will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Recent Diagnostics -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Diagnostics</h3>
+                <div id="recent-diagnostics" class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-700">No active codes</span>
+                        </div>
+                        <span class="text-xs text-gray-500">Just now</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">AI Insights</h3>
+                <div id="ai-insights" class="space-y-3">
+                    <div class="p-3 bg-blue-50 rounded-lg">
+                        <div class="flex items-start space-x-3">
+                            <i data-lucide="brain" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Driving Analysis</p>
+                                <p class="text-xs text-gray-600">Your driving style is efficient. Keep it up!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebSocket Connection and Real-time Updates -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // WebSocket connection
+        const socket = io();
+        let realtimeChart, healthChart;
+        let chartData = {
+            labels: [],
+            rpm: [],
+            speed: [],
+            load: []
+        };
+
+        // Connection status
+        socket.on('connect', function() {
+            updateConnectionStatus('online', 'Connected');
+        });
+
+        socket.on('disconnect', function() {
+            updateConnectionStatus('offline', 'Disconnected');
+        });
+
+        socket.on('reconnect', function() {
+            updateConnectionStatus('online', 'Reconnected');
+        });
+
+        function updateConnectionStatus(status, text) {
+            const statusElement = document.getElementById('connection-status');
+            const dot = statusElement.querySelector('div');
+            const span = statusElement.querySelector('span');
+            
+            dot.className = `w-3 h-3 rounded-full status-${status}`;
+            if (status === 'online') {
+                dot.classList.remove('pulse-animation');
+            } else {
+                dot.classList.add('pulse-animation');
+            }
+            span.textContent = text;
+        }
+
+        // Real-time data updates
+        socket.on('obd_data', function(data) {
+            updateDashboard(data);
+            updateCharts(data);
+        });
+
+        socket.on('diagnostic_codes', function(codes) {
+            updateDiagnostics(codes);
+        });
+
+        socket.on('ai_analysis', function(analysis) {
+            updateAIInsights(analysis);
+        });
+
+        function updateDashboard(data) {
+            // Update status cards
+            if (data.ENGINE_RPM) {
+                document.getElementById('engine-rpm').textContent = Math.round(data.ENGINE_RPM.value);
+            }
+            if (data.VEHICLE_SPEED) {
+                document.getElementById('vehicle-speed').textContent = `${Math.round(data.VEHICLE_SPEED.value)} km/h`;
+            }
+            
+            // Update live parameters
+            updateLiveParameters(data);
+        }
+
+        function updateLiveParameters(data) {
+            const container = document.getElementById('live-parameters');
+            container.innerHTML = '';
+            
+            Object.entries(data).forEach(([key, param]) => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-2 bg-gray-50 rounded';
+                div.innerHTML = `
+                    <span class="text-sm text-gray-600">${key.replace('_', ' ')}</span>
+                    <span class="text-sm font-medium">${param.value} ${param.unit || ''}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateCharts(data) {
+            const now = new Date().toLocaleTimeString();
+            
+            // Keep only last 20 data points
+            if (chartData.labels.length >= 20) {
+                chartData.labels.shift();
+                chartData.rpm.shift();
+                chartData.speed.shift();
+                chartData.load.shift();
+            }
+            
+            chartData.labels.push(now);
+            chartData.rpm.push(data.ENGINE_RPM ? data.ENGINE_RPM.value : 0);
+            chartData.speed.push(data.VEHICLE_SPEED ? data.VEHICLE_SPEED.value : 0);
+            chartData.load.push(data.ENGINE_LOAD ? data.ENGINE_LOAD.value : 0);
+            
+            if (realtimeChart) {
+                realtimeChart.update();
+            }
+        }
+
+        function updateDiagnostics(codes) {
+            const container = document.getElementById('recent-diagnostics');
+            container.innerHTML = '';
+            
+            if (codes.length === 0) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-700">No active codes</span>
+                        </div>
+                        <span class="text-xs text-gray-500">Just now</span>
+                    </div>
+                `;
+            } else {
+                codes.forEach(code => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-3 bg-red-50 rounded-lg';
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-900">${code.code}</span>
+                                <p class="text-xs text-gray-600">${code.description}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-500">Active</span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        function updateAIInsights(analysis) {
+            const container = document.getElementById('ai-insights');
+            // Add new insights while keeping existing ones
+            const div = document.createElement('div');
+            div.className = 'p-3 bg-blue-50 rounded-lg';
+            div.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="brain" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">${analysis.type}</p>
+                        <p class="text-xs text-gray-600">${analysis.message}</p>
+                    </div>
+                </div>
+            `;
+            container.insertBefore(div, container.firstChild);
+            
+            // Keep only last 3 insights
+            while (container.children.length > 3) {
+                container.removeChild(container.lastChild);
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Real-time chart
+            const realtimeCtx = document.getElementById('realtime-chart').getContext('2d');
+            realtimeChart = new Chart(realtimeCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'RPM',
+                        data: chartData.rpm,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Health chart (doughnut)
+            const healthCtx = document.getElementById('health-chart').getContext('2d');
+            healthChart = new Chart(healthCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Excellent', 'Good', 'Fair', 'Poor'],
+                    datasets: [{
+                        data: [75, 15, 8, 2],
+                        backgroundColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(59, 130, 246)',
+                            'rgb(245, 158, 11)',
+                            'rgb(239, 68, 68)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart parameter switching
+        document.getElementById('chart-rpm').addEventListener('click', function() {
+            switchChartParameter('rpm', this);
+        });
+
+        document.getElementById('chart-speed').addEventListener('click', function() {
+            switchChartParameter('speed', this);
+        });
+
+        document.getElementById('chart-load').addEventListener('click', function() {
+            switchChartParameter('load', this);
+        });
+
+        function switchChartParameter(param, button) {
+            // Update button states
+            document.querySelectorAll('[id^="chart-"]').forEach(btn => {
+                btn.className = 'px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full';
+            });
+            button.className = 'px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full';
+
+            // Update chart data
+            realtimeChart.data.datasets[0].data = chartData[param];
+            realtimeChart.data.datasets[0].label = param.toUpperCase();
+            realtimeChart.update();
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            
+            // Simulate some initial data for demo
+            setTimeout(() => {
+                updateConnectionStatus('online', 'Connected');
+                
+                // Simulate real-time data
+                setInterval(() => {
+                    const mockData = {
+                        ENGINE_RPM: { value: 800 + Math.random() * 200, unit: 'rpm' },
+                        VEHICLE_SPEED: { value: Math.random() * 60, unit: 'km/h' },
+                        ENGINE_LOAD: { value: 20 + Math.random() * 30, unit: '%' },
+                        COOLANT_TEMP: { value: 85 + Math.random() * 10, unit: '°C' },
+                        THROTTLE_POS: { value: Math.random() * 50, unit: '%' }
+                    };
+                    updateDashboard(mockData);
+                    updateCharts(mockData);
+                }, 2000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
