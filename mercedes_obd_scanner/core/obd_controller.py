@@ -1,9 +1,11 @@
 """
 OBD контроллер v2.0 с поддержкой стратегии протоколов
 """
+
 from typing import List, Dict, Any, Callable, Optional, Type
 
 from .protocols import ProtocolHandler, DemoProtocolHandler, OBDProtocolHandler, UDSProtocolHandler
+
 
 class OBDController:
     """Контроллер для работы с OBD, использующий стратегию протоколов"""
@@ -11,13 +13,13 @@ class OBDController:
     def __init__(self):
         self.data_callbacks: List[Callable] = []
         self.status_callbacks: List[Callable] = []
-        
+
         self.protocol_handlers: Dict[str, Type[ProtocolHandler]] = {
             "DEMO": DemoProtocolHandler,
             "OBD-II": OBDProtocolHandler,
-            "UDS": UDSProtocolHandler
+            "UDS": UDSProtocolHandler,
         }
-        
+
         self.active_handler: Optional[ProtocolHandler] = None
 
     def add_data_callback(self, callback: Callable):
@@ -77,4 +79,3 @@ class OBDController:
     @property
     def is_connected(self) -> bool:
         return self.active_handler is not None and self.active_handler.is_connected
-

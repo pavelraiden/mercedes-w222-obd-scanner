@@ -1,9 +1,11 @@
 """
 Базовый класс для анализаторов компонентов.
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
 import re
+
 
 class BaseAnalyzer(ABC):
     """Абстрактный базовый класс для всех анализаторов."""
@@ -27,16 +29,21 @@ class BaseAnalyzer(ABC):
 
         for rule in self.rules:
             condition = rule["condition"]
-            required_params = re.findall(r'[A-Z_]+', condition)
+            required_params = re.findall(r"[A-Z_]+", condition)
 
             if all(param in data for param in required_params):
                 try:
-                    if eval(condition, {}, data):
+                    # Safe condition evaluation - replace eval with specific condition checks
+                    try:
+                        # Parse simple conditions like "data['param'] > value"
+                        if self._evaluate_condition_safely(condition, data):
                         total_wear_increase += rule["wear_increase"]
-                        issues_found.append({
-                            "description": rule["description"],
-                            "wear_increase": rule["wear_increase"]
-                        })
+                        issues_found.append(
+                            {
+                                "description": rule["description"],
+                                "wear_increase": rule["wear_increase"],
+                            }
+                        )
                 except Exception:
                     pass
 
@@ -44,7 +51,6 @@ class BaseAnalyzer(ABC):
             return {
                 "component": self.component_name,
                 "wear_index": total_wear_increase,
-                "issues": issues_found
+                "issues": issues_found,
             }
         return None
-

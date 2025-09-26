@@ -4,8 +4,12 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
+
 class AnomalyDetector:
-    def __init__(self, model_path="/home/ubuntu/mercedes-obd-scanner/mercedes_obd_scanner/ml/models/anomaly_model.pkl"):
+    def __init__(
+        self,
+        model_path="/home/ubuntu/mercedes-obd-scanner/mercedes_obd_scanner/ml/models/anomaly_model.pkl",
+    ):
         self.model_path = model_path
         self.model = self.load_model()
 
@@ -25,4 +29,3 @@ class AnomalyDetector:
         if not isinstance(data, pd.DataFrame):
             data = pd.DataFrame([data])
         return self.model.decision_function(data)
-

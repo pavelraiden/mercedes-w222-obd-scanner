@@ -14,7 +14,10 @@ from ..diagnostics import PredictiveManager
 from ..trip_analyzer import TripAnalyzer
 from ..ml.inference.anomaly_detector import AnomalyDetector
 
-PredictiveConfigPath = Path(__file__).parent.parent / "diagnostics" / "diagnostics_knowledge_base.yaml"
+PredictiveConfigPath = (
+    Path(__file__).parent.parent / "diagnostics" / "diagnostics_knowledge_base.yaml"
+)
+
 
 class ParameterData:
     def __init__(self, name: str, value: Any, unit: str, timestamp: datetime):
@@ -22,6 +25,7 @@ class ParameterData:
         self.value = value
         self.unit = unit
         self.timestamp = timestamp
+
 
 class AppController:
     def __init__(self):
@@ -38,7 +42,7 @@ class AppController:
         self.trip_analyzer = TripAnalyzer(
             self.db_manager,
             openai_api_key=os.getenv("OPENAI_API_KEY"),
-            grok_api_key=os.getenv("GROK_API_KEY")
+            grok_api_key=os.getenv("GROK_API_KEY"),
         )
         self.obd_controller = OBDController()
         self.obd_controller.add_data_callback(self._on_obd_data)
@@ -72,14 +76,16 @@ class AppController:
             self.notify("anomaly_detected", {"score": anomaly_score, "data": self.current_data})
 
     def _on_obd_status_change(self, status: str, message: str):
-        self.is_connected = (status == "connected")
+        self.is_connected = status == "connected"
         self.notify("status_update", status, message)
         if status == "connected":
             self.current_session_id = self.db_manager.create_session()
         elif status == "disconnected":
             if self.current_session_id:
                 self.db_manager.end_session(self.current_session_id)
-                asyncio.create_task(self.trip_analyzer.analyze_and_save_trip(self.current_session_id))
+                asyncio.create_task(
+                    self.trip_analyzer.analyze_and_save_trip(self.current_session_id)
+                )
                 self.current_session_id = None
 
     def connect_obd(self, protocol: str, port: str, vehicle_id: str = None):
@@ -88,7 +94,7 @@ class AppController:
         self.current_session_id = self.db_manager.create_session(vehicle_id, protocol, port)
         self.obd_controller.connect(protocol, port, vehicle_id=vehicle_id)
         if "unittest" in str(Path.cwd()):
-             self._on_obd_status_change("connected", "Mock connection successful")
+            self._on_obd_status_change("connected", "Mock connection successful")
 
     def disconnect_obd(self):
         if not self.is_connected:
@@ -108,4 +114,3 @@ class AppController:
 
     def get_trip_details(self, session_id: str) -> Dict[str, Any]:
         return self.db_manager.get_session_data(session_id)
-

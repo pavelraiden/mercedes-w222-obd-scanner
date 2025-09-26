@@ -1,11 +1,13 @@
 """
 Обработчик демо-протокола для Mercedes OBD Scanner
 """
+
 import time
 import random
 from typing import List, Dict, Any, Callable
 
 from .base_handler import ProtocolHandler
+
 
 class DemoProtocolHandler(ProtocolHandler):
     """Обработчик для демонстрационного режима"""
@@ -31,8 +33,12 @@ class DemoProtocolHandler(ProtocolHandler):
 
         # Имитация данных
         elapsed_time = time.time() - self.start_time
-        rpm = 2000 + 1000 * (1 + random.uniform(-0.1, 0.1)) * (1 + 0.5 * random.random() * (elapsed_time % 10))
-        speed = 80 + 20 * (1 + random.uniform(-0.1, 0.1)) * (1 + 0.5 * random.random() * (elapsed_time % 10))
+        rpm = 2000 + 1000 * (1 + random.uniform(-0.1, 0.1)) * (
+            1 + 0.5 * random.random() * (elapsed_time % 10)
+        )
+        speed = 80 + 20 * (1 + random.uniform(-0.1, 0.1)) * (
+            1 + 0.5 * random.random() * (elapsed_time % 10)
+        )
         temp = 90 + 5 * random.uniform(-0.5, 0.5)
         fuel = 60 - 5 * (elapsed_time / 60)
         throttle = 30 + 10 * random.random()
@@ -53,7 +59,7 @@ class DemoProtocolHandler(ProtocolHandler):
                 "description": "Cylinder 1 Misfire Detected",
                 "status": "active",
                 "system": "engine",
-                "severity": "error"
+                "severity": "error",
             }
         ]
 
@@ -63,4 +69,3 @@ class DemoProtocolHandler(ProtocolHandler):
     @staticmethod
     def get_available_ports() -> List[str]:
         return ["DEMO"]
-

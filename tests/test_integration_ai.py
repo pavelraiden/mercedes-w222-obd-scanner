@@ -1,6 +1,7 @@
 """
 Интеграционные тесты для AI-функций.
 """
+
 import unittest
 from unittest.mock import MagicMock, patch, AsyncMock
 import time
@@ -8,6 +9,7 @@ import os
 from pathlib import Path
 
 from mercedes_obd_scanner.gui.app_controller import AppController
+
 
 class TestAIFeatures(unittest.TestCase):
 
@@ -24,7 +26,10 @@ class TestAIFeatures(unittest.TestCase):
         if db_path.exists():
             db_path.unlink()
 
-    @patch('mercedes_obd_scanner.trip_analyzer.trip_analyzer.TripAnalyzer.analyze_and_save_trip', new_callable=AsyncMock)
+    @patch(
+        "mercedes_obd_scanner.trip_analyzer.trip_analyzer.TripAnalyzer.analyze_and_save_trip",
+        new_callable=AsyncMock,
+    )
     def test_trip_analysis_is_triggered_on_disconnect(self, mock_analyze_and_save):
         """Тестирует, что анализ поездки вызывается при отключении."""
         # 1. Вручную устанавливаем состояние "подключено"
@@ -59,15 +64,18 @@ class TestAIFeatures(unittest.TestCase):
 
         # 4. Проверяем, что коллбэк был вызван
         mock_gui_callback.assert_called_once()
-        
+
         # 5. Проверяем содержимое коллбэка
         args, _ = mock_gui_callback.call_args
         predictions = args[0]
         self.assertIsInstance(predictions, list)
         self.assertGreater(len(predictions), 0)
-        self.assertEqual(predictions[0]['component'], 'Двигатель')
-        self.assertEqual(predictions[0]['issues'][0]['description'], "Повышенная температура охлаждающей жидкости при высокой нагрузке.")
+        self.assertEqual(predictions[0]["component"], "Двигатель")
+        self.assertEqual(
+            predictions[0]["issues"][0]["description"],
+            "Повышенная температура охлаждающей жидкости при высокой нагрузке.",
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
-

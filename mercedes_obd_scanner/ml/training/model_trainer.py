@@ -4,8 +4,13 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
+
 class ModelTrainer:
-    def __init__(self, data_path, model_path="/home/ubuntu/mercedes-obd-scanner/mercedes_obd_scanner/ml/models/anomaly_model.pkl"):
+    def __init__(
+        self,
+        data_path,
+        model_path="/home/ubuntu/mercedes-obd-scanner/mercedes_obd_scanner/ml/models/anomaly_model.pkl",
+    ):
         self.data_path = data_path
         self.model_path = model_path
         self.model = IsolationForest(contamination=0.1)
@@ -22,4 +27,3 @@ class ModelTrainer:
 
     def save_model(self):
         joblib.dump(self.model, self.model_path)
-

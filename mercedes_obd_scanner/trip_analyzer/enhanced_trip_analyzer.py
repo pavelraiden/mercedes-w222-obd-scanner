@@ -2,6 +2,7 @@
 Enhanced Trip Analyzer with Modern Claude API Integration
 Supports latest Claude models with advanced multimodal capabilities
 """
+
 import os
 import json
 import asyncio
@@ -15,6 +16,7 @@ from dataclasses import dataclass
 # Import Anthropic SDK
 try:
     import anthropic
+
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
@@ -22,102 +24,106 @@ except ImportError:
 
 from ..data.database_manager import DatabaseManager
 
+
 @dataclass
 class TripAnalysisResult:
     """Enhanced trip analysis result structure"""
+
     session_id: str
     analysis_timestamp: datetime
-    
+
     # Core analysis
     claude_analysis: str
     driving_score: float  # 0-100
     efficiency_score: float  # 0-100
     safety_score: float  # 0-100
-    
+
     # Detailed insights
     fuel_efficiency_analysis: Dict[str, Any]
     driving_behavior_analysis: Dict[str, Any]
     maintenance_recommendations: List[Dict[str, Any]]
     anomaly_insights: List[Dict[str, Any]]
-    
+
     # Predictive elements
     predicted_issues: List[Dict[str, Any]]
     optimization_suggestions: List[str]
-    
+
     # Metadata
     confidence_score: float
     analysis_version: str
     error_message: Optional[str] = None
 
+
 class EnhancedTripAnalyzer:
     """Enhanced Trip Analyzer with Claude API Integration"""
-    
+
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
         self.logger = logging.getLogger(__name__)
-        
+
         # Initialize Anthropic client
         self.anthropic_client = None
-        if ANTHROPIC_AVAILABLE and os.getenv('ANTHROPIC_API_KEY'):
-            self.anthropic_client = anthropic.Anthropic(
-                api_key=os.getenv('ANTHROPIC_API_KEY')
-            )
+        if ANTHROPIC_AVAILABLE and os.getenv("ANTHROPIC_API_KEY"):
+            self.anthropic_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
             self.logger.info("Anthropic Claude API initialized successfully")
         else:
             self.logger.warning("Anthropic API not available - using fallback analysis")
-        
+
         # Analysis configuration
         self.claude_model = "claude-3-5-sonnet-20241022"  # Latest model
         self.max_tokens = 4000
         self.temperature = 0.3
-        
-    async def analyze_trip_comprehensive(self, session_id: str, 
-                                       vehicle_profile: Optional[Dict[str, Any]] = None) -> TripAnalysisResult:
+
+    async def analyze_trip_comprehensive(
+        self, session_id: str, vehicle_profile: Optional[Dict[str, Any]] = None
+    ) -> TripAnalysisResult:
         """Perform comprehensive trip analysis using Claude API"""
         try:
             # Get session data
             session_summary = self.db_manager.get_session_summary(session_id)
             if not session_summary:
                 raise ValueError(f"Session {session_id} not found")
-            
+
             # Prepare analysis data
             analysis_data = self._prepare_analysis_data(session_summary, vehicle_profile)
-            
+
             # Perform Claude analysis if available
             if self.anthropic_client:
                 claude_analysis = await self._perform_claude_analysis(analysis_data)
             else:
                 claude_analysis = self._fallback_analysis(analysis_data)
-            
+
             # Calculate scores
             scores = self._calculate_performance_scores(analysis_data, claude_analysis)
-            
+
             # Generate recommendations
-            recommendations = self._generate_maintenance_recommendations(analysis_data, claude_analysis)
-            
+            recommendations = self._generate_maintenance_recommendations(
+                analysis_data, claude_analysis
+            )
+
             # Create result
             result = TripAnalysisResult(
                 session_id=session_id,
                 analysis_timestamp=datetime.now(),
-                claude_analysis=claude_analysis.get('main_analysis', ''),
-                driving_score=scores['driving_score'],
-                efficiency_score=scores['efficiency_score'],
-                safety_score=scores['safety_score'],
-                fuel_efficiency_analysis=claude_analysis.get('fuel_efficiency', {}),
-                driving_behavior_analysis=claude_analysis.get('driving_behavior', {}),
+                claude_analysis=claude_analysis.get("main_analysis", ""),
+                driving_score=scores["driving_score"],
+                efficiency_score=scores["efficiency_score"],
+                safety_score=scores["safety_score"],
+                fuel_efficiency_analysis=claude_analysis.get("fuel_efficiency", {}),
+                driving_behavior_analysis=claude_analysis.get("driving_behavior", {}),
                 maintenance_recommendations=recommendations,
-                anomaly_insights=claude_analysis.get('anomalies', []),
-                predicted_issues=claude_analysis.get('predictions', []),
-                optimization_suggestions=claude_analysis.get('optimizations', []),
-                confidence_score=claude_analysis.get('confidence', 0.8),
-                analysis_version="2.0.0"
+                anomaly_insights=claude_analysis.get("anomalies", []),
+                predicted_issues=claude_analysis.get("predictions", []),
+                optimization_suggestions=claude_analysis.get("optimizations", []),
+                confidence_score=claude_analysis.get("confidence", 0.8),
+                analysis_version="2.0.0",
             )
-            
+
             # Save to database
             self._save_analysis_result(result)
-            
+
             return result
-            
+
         except Exception as e:
             self.logger.error(f"Trip analysis failed for session {session_id}: {str(e)}")
             return TripAnalysisResult(
@@ -135,92 +141,100 @@ class EnhancedTripAnalyzer:
                 optimization_suggestions=[],
                 confidence_score=0,
                 analysis_version="2.0.0",
-                error_message=str(e)
+                error_message=str(e),
             )
-    
-    def _prepare_analysis_data(self, session_summary: Dict[str, Any], 
-                              vehicle_profile: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+
+    def _prepare_analysis_data(
+        self, session_summary: Dict[str, Any], vehicle_profile: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Prepare comprehensive data for analysis"""
-        session_info = session_summary.get('session_info', {})
-        parameters = session_summary.get('parameters', {})
-        anomalies = session_summary.get('anomalies', {})
-        
+        session_info = session_summary.get("session_info", {})
+        parameters = session_summary.get("parameters", {})
+        anomalies = session_summary.get("anomalies", {})
+
         # Calculate derived metrics
-        duration_hours = session_summary.get('duration_minutes', 0) / 60
-        distance = session_info.get('trip_distance', 0)
-        fuel_consumed = session_info.get('fuel_consumed', 0)
-        
+        duration_hours = session_summary.get("duration_minutes", 0) / 60
+        distance = session_info.get("trip_distance", 0)
+        fuel_consumed = session_info.get("fuel_consumed", 0)
+
         # Engine performance metrics
         engine_metrics = {}
-        if 'ENGINE_RPM' in parameters:
-            engine_metrics['avg_rpm'] = parameters['ENGINE_RPM']['avg']
-            engine_metrics['max_rpm'] = parameters['ENGINE_RPM']['max']
-        
-        if 'ENGINE_LOAD' in parameters:
-            engine_metrics['avg_load'] = parameters['ENGINE_LOAD']['avg']
-            engine_metrics['max_load'] = parameters['ENGINE_LOAD']['max']
-        
-        if 'COOLANT_TEMP' in parameters:
-            engine_metrics['avg_temp'] = parameters['COOLANT_TEMP']['avg']
-            engine_metrics['max_temp'] = parameters['COOLANT_TEMP']['max']
-        
+        if "ENGINE_RPM" in parameters:
+            engine_metrics["avg_rpm"] = parameters["ENGINE_RPM"]["avg"]
+            engine_metrics["max_rpm"] = parameters["ENGINE_RPM"]["max"]
+
+        if "ENGINE_LOAD" in parameters:
+            engine_metrics["avg_load"] = parameters["ENGINE_LOAD"]["avg"]
+            engine_metrics["max_load"] = parameters["ENGINE_LOAD"]["max"]
+
+        if "COOLANT_TEMP" in parameters:
+            engine_metrics["avg_temp"] = parameters["COOLANT_TEMP"]["avg"]
+            engine_metrics["max_temp"] = parameters["COOLANT_TEMP"]["max"]
+
         # Fuel efficiency
         fuel_efficiency = {}
         if distance > 0 and fuel_consumed > 0:
-            fuel_efficiency['consumption_per_100km'] = (fuel_consumed / distance) * 100
-            fuel_efficiency['efficiency_rating'] = self._rate_fuel_efficiency(fuel_efficiency['consumption_per_100km'])
-        
+            fuel_efficiency["consumption_per_100km"] = (fuel_consumed / distance) * 100
+            fuel_efficiency["efficiency_rating"] = self._rate_fuel_efficiency(
+                fuel_efficiency["consumption_per_100km"]
+            )
+
         # Speed analysis
         speed_analysis = {}
-        if 'SPEED' in parameters:
-            speed_analysis['avg_speed'] = parameters['SPEED']['avg']
-            speed_analysis['max_speed'] = parameters['SPEED']['max']
-            speed_analysis['speed_variability'] = self._calculate_speed_variability(session_summary['session_info']['session_id'])
-        
+        if "SPEED" in parameters:
+            speed_analysis["avg_speed"] = parameters["SPEED"]["avg"]
+            speed_analysis["max_speed"] = parameters["SPEED"]["max"]
+            speed_analysis["speed_variability"] = self._calculate_speed_variability(
+                session_summary["session_info"]["session_id"]
+            )
+
         return {
-            'session_info': session_info,
-            'duration_hours': duration_hours,
-            'distance_km': distance,
-            'fuel_consumed_liters': fuel_consumed,
-            'engine_metrics': engine_metrics,
-            'fuel_efficiency': fuel_efficiency,
-            'speed_analysis': speed_analysis,
-            'anomalies': anomalies,
-            'vehicle_profile': vehicle_profile or {},
-            'parameter_quality': {name: data.get('quality', 1.0) for name, data in parameters.items()}
+            "session_info": session_info,
+            "duration_hours": duration_hours,
+            "distance_km": distance,
+            "fuel_consumed_liters": fuel_consumed,
+            "engine_metrics": engine_metrics,
+            "fuel_efficiency": fuel_efficiency,
+            "speed_analysis": speed_analysis,
+            "anomalies": anomalies,
+            "vehicle_profile": vehicle_profile or {},
+            "parameter_quality": {
+                name: data.get("quality", 1.0) for name, data in parameters.items()
+            },
         }
-    
+
     async def _perform_claude_analysis(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """Perform analysis using Claude API"""
         try:
             # Create comprehensive prompt
             prompt = self._create_analysis_prompt(analysis_data)
-            
+
             # Call Claude API
             response = await asyncio.to_thread(
                 self.anthropic_client.messages.create,
                 model=self.claude_model,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
+                messages=[{"role": "user", "content": prompt}],
             )
-            
+
             # Parse response
             analysis_text = response.content[0].text
             return self._parse_claude_response(analysis_text)
-            
+
         except Exception as e:
             self.logger.error(f"Claude API analysis failed: {str(e)}")
             return self._fallback_analysis(analysis_data)
-    
+
     def _create_analysis_prompt(self, analysis_data: Dict[str, Any]) -> str:
         """Create comprehensive analysis prompt for Claude"""
-        vehicle_info = analysis_data.get('vehicle_profile', {})
-        vehicle_desc = f"Mercedes-Benz W222 {vehicle_info.get('model', 'S-Class')}" if vehicle_info else "Mercedes-Benz W222 S-Class"
-        
+        vehicle_info = analysis_data.get("vehicle_profile", {})
+        vehicle_desc = (
+            f"Mercedes-Benz W222 {vehicle_info.get('model', 'S-Class')}"
+            if vehicle_info
+            else "Mercedes-Benz W222 S-Class"
+        )
+
         prompt = f"""
 You are an expert automotive diagnostician and data analyst specializing in Mercedes-Benz vehicles, particularly the W222 S-Class platform. Analyze the following comprehensive trip data and provide detailed insights.
 
@@ -309,14 +323,14 @@ Focus on:
 Provide specific, actionable insights rather than generic advice.
 """
         return prompt
-    
+
     def _parse_claude_response(self, response_text: str) -> Dict[str, Any]:
         """Parse Claude's JSON response"""
         try:
             # Try to extract JSON from response
-            start_idx = response_text.find('{')
-            end_idx = response_text.rfind('}') + 1
-            
+            start_idx = response_text.find("{")
+            end_idx = response_text.rfind("}") + 1
+
             if start_idx != -1 and end_idx != -1:
                 json_str = response_text[start_idx:end_idx]
                 return json.loads(json_str)
@@ -332,7 +346,7 @@ Provide specific, actionable insights rather than generic advice.
                     "anomalies": [],
                     "predictions": [],
                     "optimizations": [],
-                    "confidence": 0.7
+                    "confidence": 0.7,
                 }
         except json.JSONDecodeError:
             self.logger.warning("Failed to parse Claude JSON response, using fallback")
@@ -346,23 +360,23 @@ Provide specific, actionable insights rather than generic advice.
                 "anomalies": [],
                 "predictions": [],
                 "optimizations": [],
-                "confidence": 0.6
+                "confidence": 0.6,
             }
-    
+
     def _fallback_analysis(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """Fallback analysis when Claude API is not available"""
-        engine_metrics = analysis_data.get('engine_metrics', {})
-        fuel_efficiency = analysis_data.get('fuel_efficiency', {})
-        anomalies = analysis_data.get('anomalies', {})
-        
+        engine_metrics = analysis_data.get("engine_metrics", {})
+        fuel_efficiency = analysis_data.get("fuel_efficiency", {})
+        anomalies = analysis_data.get("anomalies", {})
+
         # Basic scoring
         driving_score = 75
         efficiency_score = 70
         safety_score = 80
-        
+
         # Adjust scores based on available data
-        if fuel_efficiency.get('consumption_per_100km'):
-            consumption = fuel_efficiency['consumption_per_100km']
+        if fuel_efficiency.get("consumption_per_100km"):
+            consumption = fuel_efficiency["consumption_per_100km"]
             if consumption < 8:  # Excellent for W222
                 efficiency_score = 90
             elif consumption < 10:  # Good
@@ -371,13 +385,13 @@ Provide specific, actionable insights rather than generic advice.
                 efficiency_score = 70
             else:  # Poor
                 efficiency_score = 50
-        
+
         # Adjust for anomalies
         total_anomalies = sum(anomalies.values())
         if total_anomalies > 0:
             safety_score -= min(total_anomalies * 10, 30)
             driving_score -= min(total_anomalies * 5, 20)
-        
+
         main_analysis = f"""
 Fallback Analysis for Mercedes W222 Trip:
 
@@ -394,65 +408,64 @@ Fuel Efficiency: {fuel_efficiency.get('consumption_per_100km', 'N/A')} L/100km
 
 Anomalies Detected: {total_anomalies} issues requiring attention
 
-This analysis was generated using fallback algorithms. For detailed AI-powered insights, 
+This analysis was generated using fallback algorithms. For detailed AI-powered insights,
 please configure the Claude API integration.
         """.strip()
-        
+
         return {
             "main_analysis": main_analysis,
             "driving_score": driving_score,
             "efficiency_score": efficiency_score,
             "safety_score": safety_score,
             "fuel_efficiency": {
-                "rating": fuel_efficiency.get('efficiency_rating', 'average'),
-                "consumption_per_100km": fuel_efficiency.get('consumption_per_100km', 0)
+                "rating": fuel_efficiency.get("efficiency_rating", "average"),
+                "consumption_per_100km": fuel_efficiency.get("consumption_per_100km", 0),
             },
-            "driving_behavior": {
-                "style": "moderate",
-                "engine_stress_level": "moderate"
-            },
+            "driving_behavior": {"style": "moderate", "engine_stress_level": "moderate"},
             "anomalies": [],
             "predictions": [],
             "optimizations": [
                 "Configure Claude API for detailed AI analysis",
                 "Monitor fuel consumption patterns",
-                "Regular maintenance schedule adherence"
+                "Regular maintenance schedule adherence",
             ],
-            "confidence": 0.6
+            "confidence": 0.6,
         }
-    
-    def _calculate_performance_scores(self, analysis_data: Dict[str, Any], 
-                                    claude_analysis: Dict[str, Any]) -> Dict[str, float]:
+
+    def _calculate_performance_scores(
+        self, analysis_data: Dict[str, Any], claude_analysis: Dict[str, Any]
+    ) -> Dict[str, float]:
         """Calculate performance scores"""
         # Use Claude scores if available, otherwise calculate
         return {
-            'driving_score': claude_analysis.get('driving_score', 75.0),
-            'efficiency_score': claude_analysis.get('efficiency_score', 70.0),
-            'safety_score': claude_analysis.get('safety_score', 80.0)
+            "driving_score": claude_analysis.get("driving_score", 75.0),
+            "efficiency_score": claude_analysis.get("efficiency_score", 70.0),
+            "safety_score": claude_analysis.get("safety_score", 80.0),
         }
-    
-    def _generate_maintenance_recommendations(self, analysis_data: Dict[str, Any], 
-                                            claude_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
+
+    def _generate_maintenance_recommendations(
+        self, analysis_data: Dict[str, Any], claude_analysis: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Generate maintenance recommendations"""
-        recommendations = claude_analysis.get('maintenance_priority', [])
-        
+        recommendations = claude_analysis.get("maintenance_priority", [])
+
         # Add default recommendations if none provided
         if not recommendations:
             recommendations = [
                 {
                     "item": "Engine Oil Change",
                     "urgency": "routine",
-                    "reason": "Regular maintenance schedule"
+                    "reason": "Regular maintenance schedule",
                 },
                 {
                     "item": "Air Filter Inspection",
                     "urgency": "routine",
-                    "reason": "Maintain optimal engine performance"
-                }
+                    "reason": "Maintain optimal engine performance",
+                },
             ]
-        
+
         return recommendations
-    
+
     def _rate_fuel_efficiency(self, consumption_per_100km: float) -> str:
         """Rate fuel efficiency for W222 S-Class"""
         if consumption_per_100km < 8:
@@ -463,57 +476,59 @@ please configure the Claude API integration.
             return "average"
         else:
             return "poor"
-    
+
     def _calculate_speed_variability(self, session_id: str) -> float:
         """Calculate speed variability from session data"""
         try:
             # Get speed data from database
-            speed_data = self.db_manager.get_training_data(['SPEED'], session_id=session_id)
+            speed_data = self.db_manager.get_training_data(["SPEED"], session_id=session_id)
             if not speed_data.empty:
-                return float(speed_data['value'].std())
+                return float(speed_data["value"].std())
             return 0.0
         except Exception:
             return 0.0
-    
+
     def _save_analysis_result(self, result: TripAnalysisResult):
         """Save analysis result to database"""
         analysis_data = {
-            'gpt_analysis': result.claude_analysis,  # Keep field name for compatibility
-            'final_report': result.claude_analysis,
-            'driving_score': result.driving_score,
-            'efficiency_score': result.efficiency_score,
-            'safety_score': result.safety_score,
-            'maintenance_recommendations': json.dumps(result.maintenance_recommendations),
-            'error': result.error_message
+            "gpt_analysis": result.claude_analysis,  # Keep field name for compatibility
+            "final_report": result.claude_analysis,
+            "driving_score": result.driving_score,
+            "efficiency_score": result.efficiency_score,
+            "safety_score": result.safety_score,
+            "maintenance_recommendations": json.dumps(result.maintenance_recommendations),
+            "error": result.error_message,
         }
-        
+
         self.db_manager.save_trip_analysis(result.session_id, analysis_data)
-    
+
     def get_historical_analysis(self, vehicle_id: str, days_back: int = 30) -> List[Dict[str, Any]]:
         """Get historical analysis for trend analysis"""
         sessions = self.db_manager.get_sessions(vehicle_id=vehicle_id, limit=50)
-        
+
         historical_data = []
         for session in sessions:
-            if session.get('end_time'):
-                analysis = self.db_manager.get_session_data(session['session_id'])
+            if session.get("end_time"):
+                analysis = self.db_manager.get_session_data(session["session_id"])
                 if analysis:
-                    historical_data.append({
-                        'session_id': session['session_id'],
-                        'date': session['start_time'],
-                        'driving_score': analysis.get('driving_score', 0),
-                        'efficiency_score': analysis.get('efficiency_score', 0),
-                        'safety_score': analysis.get('safety_score', 0),
-                        'distance': session.get('trip_distance', 0),
-                        'fuel_consumed': session.get('fuel_consumed', 0)
-                    })
-        
+                    historical_data.append(
+                        {
+                            "session_id": session["session_id"],
+                            "date": session["start_time"],
+                            "driving_score": analysis.get("driving_score", 0),
+                            "efficiency_score": analysis.get("efficiency_score", 0),
+                            "safety_score": analysis.get("safety_score", 0),
+                            "distance": session.get("trip_distance", 0),
+                            "fuel_consumed": session.get("fuel_consumed", 0),
+                        }
+                    )
+
         return historical_data
-    
+
     async def batch_analyze_sessions(self, session_ids: List[str]) -> List[TripAnalysisResult]:
         """Analyze multiple sessions in batch"""
         results = []
-        
+
         for session_id in session_ids:
             try:
                 result = await self.analyze_trip_comprehensive(session_id)
@@ -521,5 +536,5 @@ please configure the Claude API integration.
             except Exception as e:
                 self.logger.error(f"Failed to analyze session {session_id}: {str(e)}")
                 continue
-        
+
         return results

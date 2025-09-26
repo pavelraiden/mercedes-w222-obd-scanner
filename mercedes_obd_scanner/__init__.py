@@ -12,9 +12,4 @@ from .core.config_manager import ConfigManager, config_manager
 from .core.obd_controller import OBDController
 from .gui.main_window import MercedesOBDScanner
 
-__all__ = [
-    "ConfigManager",
-    "config_manager", 
-    "OBDController",
-    "MercedesOBDScanner"
-]
+__all__ = ["ConfigManager", "config_manager", "OBDController", "MercedesOBDScanner"]

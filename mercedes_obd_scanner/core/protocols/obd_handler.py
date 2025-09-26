@@ -1,10 +1,12 @@
 """
 Обработчик OBD-протокола для Mercedes OBD Scanner
 """
+
 import obd
 from typing import List, Dict, Any, Callable
 
 from .base_handler import ProtocolHandler
+
 
 class OBDProtocolHandler(ProtocolHandler):
     """Обработчик для стандартного OBD-II протокола"""
@@ -50,7 +52,7 @@ class OBDProtocolHandler(ProtocolHandler):
             "COOLANT_TEMP": "engine_temp",
             "FUEL_LEVEL": "fuel_level",
             "THROTTLE_POS": "throttle_position",
-            "INTAKE_PRESSURE": "intake_pressure"
+            "INTAKE_PRESSURE": "intake_pressure",
         }
 
         for obd_cmd, internal_name in param_map.items():
@@ -59,7 +61,9 @@ class OBDProtocolHandler(ProtocolHandler):
                     cmd = obd.commands[obd_cmd]
                     response = self.connection.query(cmd, force=True)
                     if response and not response.is_null():
-                        self.data_callback(internal_name, response.value.magnitude, str(response.value.units))
+                        self.data_callback(
+                            internal_name, response.value.magnitude, str(response.value.units)
+                        )
                 except Exception as e:
                     print(f"Error reading {obd_cmd}: {e}")
 
@@ -76,7 +80,7 @@ class OBDProtocolHandler(ProtocolHandler):
                         "description": code[1],
                         "status": "active",
                         "system": "obd",
-                        "severity": "warning"
+                        "severity": "warning",
                     }
                     for code in response.value
                 ]
@@ -104,4 +108,3 @@ class OBDProtocolHandler(ProtocolHandler):
         except Exception as e:
             print(f"Error scanning ports: {e}")
             return []
-

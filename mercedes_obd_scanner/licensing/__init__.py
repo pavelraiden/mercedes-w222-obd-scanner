@@ -8,11 +8,11 @@ from .crypto import LicenseCrypto, license_crypto
 
 __all__ = [
     "LicenseManager",
-    "LicenseType", 
+    "LicenseType",
     "LicenseStatus",
     "license_manager",
     "HardwareIDGenerator",
     "hardware_id_generator",
     "LicenseCrypto",
-    "license_crypto"
+    "license_crypto",
 ]
