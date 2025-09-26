@@ -263,7 +263,7 @@ ENVIRONMENTAL CONDITIONS:
 VEHICLE CONTEXT:
 - Model Year: {vehicle_year}
 - Engine: {engine_type}
-- Mileage: {total_mileage}
+- Mileage: {mileage}
 
 Analyze this trip and provide optimization recommendations.""",
             
