@@ -1,0 +1,118 @@
+metadata:
+  version: "1.0"
+  description: "Base engine parameters for all Mercedes engines"
+  author: "Manus & Claude AI"
+  created: "2025-09-26"
+
+# Стандартные OBD-II параметры, доступные для всех двигателей
+common_pids:
+  engine_rpm:
+    code: "0x0C"
+    description: "Engine RPM"
+    formula: "((A*256)+B)/4"
+    units: "rpm"
+    ranges:
+      normal: [700, 6500]
+      warning: [6500, 7000]
+      critical: [7000, null]
+    update_frequency: 100  # ms
+    
+  coolant_temp:
+    code: "0x05"
+    description: "Engine coolant temperature"
+    formula: "A-40"
+    units: "°C"
+    ranges:
+      normal: [80, 105]
+      warning: [105, 115]
+      critical: [115, null]
+    update_frequency: 1000
+    
+  engine_load:
+    code: "0x04"
+    description: "Calculated engine load"
+    formula: "A*100/255"
+    units: "%"
+    ranges:
+      normal: [0, 85]
+      warning: [85, 95]
+      critical: [95, 100]
+    update_frequency: 200
+    
+  vehicle_speed:
+    code: "0x0D"
+    description: "Vehicle speed"
+    formula: "A"
+    units: "km/h"
+    ranges:
+      normal: [0, 250]
+      warning: [250, 280]
+      critical: [280, null]
+    update_frequency: 500
+    
+  throttle_position:
+    code: "0x11"
+    description: "Throttle position"
+    formula: "A*100/255"
+    units: "%"
+    ranges:
+      normal: [0, 100]
+      warning: [null, null]
+      critical: [null, null]
+    update_frequency: 100
+    
+  fuel_level:
+    code: "0x2F"
+    description: "Fuel tank level input"
+    formula: "A*100/255"
+    units: "%"
+    ranges:
+      normal: [10, 100]
+      warning: [5, 10]
+      critical: [0, 5]
+    update_frequency: 5000
+
+# Базовые UDS команды
+uds_commands:
+  read_dtc:
+    service: "0x19"
+    sub_function: "0x02"
+    description: "Read DTCs by status"
+    
+  clear_dtc:
+    service: "0x14"
+    description: "Clear DTCs"
+    
+  read_vin:
+    service: "0x22"
+    data_identifier: "0xF190"
+    description: "Read VIN"
+    
+  read_ecu_info:
+    service: "0x22"
+    data_identifier: "0xF186"
+    description: "Read ECU software version"
+
+# Общие диагностические процедуры
+diagnostic_routines:
+  basic_health_check:
+    description: "Basic engine health check"
+    parameters:
+      - "engine_rpm"
+      - "coolant_temp"
+      - "engine_load"
+    thresholds:
+      rpm_stability: 50  # RPM variation tolerance
+      temp_stability: 5   # Temperature variation tolerance
+      
+# Настройки логирования
+logging:
+  default_interval: 1000  # ms
+  max_log_size: 100       # MB
+  retention_days: 30
+  
+# Настройки интерфейса
+ui_settings:
+  refresh_rate: 500       # ms
+  chart_history: 300      # seconds
+  alert_duration: 5000    # ms

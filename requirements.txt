@@ -1,0 +1,28 @@
+# Mercedes W222 OBD Scanner Requirements
+
+# GUI Framework
+customtkinter>=5.2.0
+pillow>=10.0.0
+
+# OBD Communication
+pyserial>=3.5
+obd>=0.7.1
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Configuration
+pyyaml>=6.0
+configparser>=5.3.0
+
+# Logging and Utils
+loguru>=0.7.0
+python-dateutil>=2.8.0
+
+# Database
+sqlite3  # Built-in with Python
+
+# Testing (optional)
+pytest>=7.0.0
+pytest-cov>=4.0.0

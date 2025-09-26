@@ -1,0 +1,169 @@
+metadata:
+  engine_family: "M276"
+  fuel_type: "petrol"
+  description: "Mercedes M276 V6 Biturbo engine family"
+  displacement: "3.0L"
+  configuration: "V6 Biturbo"
+  years: [2010, 2020]
+
+# Специфичные для M276 параметры
+specific_pids:
+  turbo_pressure_1:
+    code: "0x0B"
+    description: "Turbocharger 1 pressure"
+    formula: "(A*256+B)/1000"
+    units: "bar"
+    ranges:
+      normal: [0.2, 1.5]
+      warning: [1.5, 1.8]
+      critical: [1.8, null]
+    update_frequency: 200
+    
+  turbo_pressure_2:
+    code: "0x70"  # Примерный код для второго турбо
+    description: "Turbocharger 2 pressure"
+    formula: "(A*256+B)/1000"
+    units: "bar"
+    ranges:
+      normal: [0.2, 1.5]
+      warning: [1.5, 1.8]
+      critical: [1.8, null]
+    update_frequency: 200
+    
+  intercooler_temp:
+    code: "0x0F"
+    description: "Intercooler temperature"
+    formula: "A-40"
+    units: "°C"
+    ranges:
+      normal: [20, 60]
+      warning: [60, 80]
+      critical: [80, null]
+    update_frequency: 1000
+    
+  oil_pressure:
+    code: "0x0A"
+    description: "Engine oil pressure"
+    formula: "(A*256+B)/1000"
+    units: "bar"
+    ranges:
+      normal: [2.0, 6.0]
+      warning: [1.5, 2.0]
+      critical: [0, 1.5]
+    update_frequency: 500
+    
+  oil_temperature:
+    code: "0x5C"
+    description: "Engine oil temperature"
+    formula: "A-40"
+    units: "°C"
+    ranges:
+      normal: [80, 120]
+      warning: [120, 140]
+      critical: [140, null]
+    update_frequency: 1000
+    
+  lambda_bank1:
+    code: "0x14"
+    description: "Lambda sensor bank 1"
+    formula: "A/128-1"
+    units: "λ"
+    ranges:
+      normal: [0.95, 1.05]
+      warning: [0.90, 0.95]
+      critical: [0, 0.90]
+    update_frequency: 200
+    
+  lambda_bank2:
+    code: "0x15"
+    description: "Lambda sensor bank 2"
+    formula: "A/128-1"
+    units: "λ"
+    ranges:
+      normal: [0.95, 1.05]
+      warning: [0.90, 0.95]
+      critical: [0, 0.90]
+    update_frequency: 200
+
+# Mercedes-специфичные UDS команды для M276
+mercedes_uds:
+  read_engine_hours:
+    service: "0x22"
+    data_identifier: "0xF186"
+    description: "Read engine operating hours"
+    
+  read_fuel_consumption:
+    service: "0x22"
+    data_identifier: "0xF187"
+    description: "Read fuel consumption data"
+    
+  turbo_actuator_test:
+    service: "0x31"
+    sub_function: "0x01"
+    routine_identifier: "0x0203"
+    description: "Turbocharger actuator test"
+    
+  injector_test:
+    service: "0x31"
+    sub_function: "0x01"
+    routine_identifier: "0x0201"
+    description: "Fuel injector test"
+
+# Диагностические процедуры для M276
+diagnostic_routines:
+  turbo_health_check:
+    description: "Turbocharger system health check"
+    parameters:
+      - "turbo_pressure_1"
+      - "turbo_pressure_2"
+      - "intercooler_temp"
+    thresholds:
+      pressure_difference: 0.1  # bar
+      temp_limit: 70           # °C
+      
+  oil_system_check:
+    description: "Oil system health check"
+    parameters:
+      - "oil_pressure"
+      - "oil_temperature"
+    thresholds:
+      min_pressure: 2.0        # bar
+      max_temperature: 130     # °C
+      
+  lambda_balance_check:
+    description: "Lambda sensor balance check"
+    parameters:
+      - "lambda_bank1"
+      - "lambda_bank2"
+    thresholds:
+      max_difference: 0.05     # λ
+
+# Известные проблемы M276
+known_issues:
+  timing_chain_stretch:
+    description: "Timing chain stretch issue"
+    symptoms:
+      - "Rattling noise on startup"
+      - "P0016 - Camshaft position correlation"
+    check_parameters:
+      - "engine_rpm"
+      - "oil_pressure"
+      
+  turbo_wastegate:
+    description: "Turbo wastegate actuator failure"
+    symptoms:
+      - "P0299 - Turbocharger underboost"
+      - "Reduced power"
+    check_parameters:
+      - "turbo_pressure_1"
+      - "turbo_pressure_2"
+      
+  carbon_buildup:
+    description: "Intake valve carbon buildup"
+    symptoms:
+      - "Rough idle"
+      - "Reduced fuel economy"
+    check_parameters:
+      - "lambda_bank1"
+      - "lambda_bank2"
+      - "engine_load"
