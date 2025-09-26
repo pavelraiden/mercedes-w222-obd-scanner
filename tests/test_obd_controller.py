@@ -6,7 +6,7 @@
 import pytest
 import time
 import threading
-from mercedes_obd_scanner.core.obd_controller import OBDController, ConnectionStatus, OBDParameter
+from mercedes_obd_scanner.core.obd_controller import OBDController
 
 
 class TestOBDController:

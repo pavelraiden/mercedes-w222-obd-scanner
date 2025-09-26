@@ -16,7 +16,7 @@ from pathlib import Path
 # from .panels.quick_diagnostic_panel import QuickDiagnosticPanel
 
 from ..core.config_manager import config_manager
-from ..core.obd_controller import OBDController, ConnectionStatus
+from ..core.obd_controller import OBDController
 
 
 class MercedesOBDScanner:
