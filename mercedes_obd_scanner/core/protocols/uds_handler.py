@@ -1,6 +1,7 @@
 """
 Обработчик UDS-протокола для Mercedes OBD Scanner
 """
+
 # import can
 # import isotp
 # from udsoncan.client import Client
@@ -11,6 +12,7 @@
 from typing import List, Dict, Any, Callable
 
 from .base_handler import ProtocolHandler
+
 
 class UDSProtocolHandler(ProtocolHandler):
     """Обработчик для UDS (ISO 14229) протокола"""
@@ -48,13 +50,13 @@ class UDSProtocolHandler(ProtocolHandler):
         # Пока что симулируем данные
         import random
         import time
-        
+
         # Симуляция данных Airmatic
         self.data_callback("airmatic_pressure_fl", 2.1 + random.uniform(-0.1, 0.1), "bar")
         self.data_callback("airmatic_pressure_fr", 2.1 + random.uniform(-0.1, 0.1), "bar")
         self.data_callback("airmatic_pressure_rl", 2.0 + random.uniform(-0.1, 0.1), "bar")
         self.data_callback("airmatic_pressure_rr", 2.0 + random.uniform(-0.1, 0.1), "bar")
-        
+
         # Симуляция данных Magic Body Control
         self.data_callback("mbc_status", random.choice([0, 1]), "")
         self.data_callback("suspension_height", 120 + random.uniform(-5, 5), "mm")
@@ -70,5 +72,4 @@ class UDSProtocolHandler(ProtocolHandler):
     @staticmethod
     def get_available_ports() -> List[str]:
         # TODO: Реализовать сканирование CAN портов
-        return ['can0', 'can1', 'vcan0']
-
+        return ["can0", "can1", "vcan0"]

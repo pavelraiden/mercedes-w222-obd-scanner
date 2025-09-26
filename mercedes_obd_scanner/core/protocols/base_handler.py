@@ -1,12 +1,14 @@
 """
 Базовый класс для обработчиков протоколов
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Callable
 
+
 class ProtocolHandler(ABC):
     """Абстрактный базовый класс для обработчиков протоколов"""
-    
+
     def __init__(self, data_callback: Callable, status_callback: Callable):
         self.data_callback = data_callback
         self.status_callback = status_callback
