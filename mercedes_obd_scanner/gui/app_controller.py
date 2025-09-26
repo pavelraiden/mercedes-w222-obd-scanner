@@ -12,6 +12,7 @@ from datetime import datetime
 
 from ..core.obd_controller import OBDController
 from ..core.config_manager import ConfigManager
+from ..data import DatabaseManager, DataExporter, ReportGenerator
 
 
 class ConnectionStatus(Enum):
@@ -59,10 +60,18 @@ class AppController:
         # Инициализация компонентов
         self.obd_controller = OBDController()
         self.config_manager = ConfigManager()
+        self.db_manager = DatabaseManager()
+        self.data_exporter = DataExporter(self.db_manager)
+        self.report_generator = ReportGenerator(self.db_manager)
         
         # Состояние приложения
         self.connection_status = ConnectionStatus.DISCONNECTED
         self.diagnostic_status = DiagnosticStatus.IDLE
+        
+        # Текущая сессия
+        self.current_session_id: Optional[str] = None
+        self.current_vehicle_id: Optional[str] = None
+        self.current_protocol: Optional[str] = None
         
         # Данные
         self.real_time_data: Dict[str, ParameterData] = {}
@@ -75,7 +84,9 @@ class AppController:
             'diagnostic_status': [],
             'parameter_update': [],
             'diagnostic_codes': [],
-            'error': []
+            'error': [],
+            'session_started': [],
+            'session_ended': []
         }
         
         # Потоки и очереди
@@ -86,6 +97,14 @@ class AppController:
         # Настройки
         self.update_interval = 0.5  # секунды
         self.max_history_points = 1000
+        self.auto_logging = True  # Автоматическое логирование
+        
+        # Пороги для алертов
+        self.alert_thresholds = {
+            'engine_temp': {'warning': 105, 'critical': 110},
+            'engine_rpm': {'warning': 5500, 'critical': 6500},
+            'oil_pressure': {'warning': 2.0, 'critical': 1.5}
+        }
         
         # Инициализация
         self._setup_obd_callbacks()
@@ -124,6 +143,24 @@ class AppController:
         if len(self.data_history[parameter]) > self.max_history_points:
             self.data_history[parameter] = self.data_history[parameter][-self.max_history_points:]
             
+        # Логирование в базу данных
+        if self.auto_logging and self.current_session_id:
+            try:
+                self.db_manager.log_parameter(
+                    session_id=self.current_session_id,
+                    parameter_name=parameter,
+                    value=float(value) if isinstance(value, (int, float)) else 0,
+                    unit=unit,
+                    status=status,
+                    vehicle_id=self.current_vehicle_id,
+                    protocol=self.current_protocol
+                )
+            except Exception as e:
+                self.notify_observers('error', f"Ошибка логирования: {e}")
+                
+        # Проверка алертов
+        self._check_alerts(parameter, value, timestamp)
+            
         # Уведомление наблюдателей
         self.notify_observers('parameter_update', parameter, param_data)
         
@@ -143,13 +180,18 @@ class AppController:
     def _determine_parameter_status(self, parameter: str, value: Any) -> str:
         """Определение статуса параметра на основе его значения"""
         try:
+            # Проверка пороговых значений
+            if parameter in self.alert_thresholds and isinstance(value, (int, float)):
+                thresholds = self.alert_thresholds[parameter]
+                
+                if 'critical' in thresholds and value >= thresholds['critical']:
+                    return "error"
+                elif 'warning' in thresholds and value >= thresholds['warning']:
+                    return "warning"
+                    
             # Получение конфигурации параметра
             param_config = self.config_manager.get_parameter(parameter)
-            if not param_config:
-                return "ok"
-                
-            # Проверка диапазонов
-            if isinstance(value, (int, float)):
+            if param_config and isinstance(value, (int, float)):
                 min_val = param_config.get('min_value')
                 max_val = param_config.get('max_value')
                 warning_min = param_config.get('warning_min')
@@ -172,8 +214,44 @@ class AppController:
         except Exception:
             return "ok"
             
+    def _check_alerts(self, parameter: str, value: Any, timestamp: datetime):
+        """Проверка алертов для параметра"""
+        if parameter not in self.alert_thresholds or not isinstance(value, (int, float)):
+            return
+            
+        thresholds = self.alert_thresholds[parameter]
+        
+        # Проверка критического порога
+        if 'critical' in thresholds and value >= thresholds['critical']:
+            self._create_alert(parameter, value, thresholds['critical'], 'critical', 
+                             f"Критическое значение {parameter}: {value}")
+                             
+        # Проверка порога предупреждения
+        elif 'warning' in thresholds and value >= thresholds['warning']:
+            self._create_alert(parameter, value, thresholds['warning'], 'warning',
+                             f"Предупреждение {parameter}: {value}")
+                             
+    def _create_alert(self, parameter: str, value: float, threshold: float, alert_type: str, message: str):
+        """Создание алерта"""
+        if self.current_session_id:
+            try:
+                self.db_manager.log_alert(
+                    session_id=self.current_session_id,
+                    parameter_name=parameter,
+                    value=value,
+                    threshold=threshold,
+                    alert_type=alert_type,
+                    message=message
+                )
+                
+                # Уведомление GUI
+                self.notify_observers('error', message)
+                
+            except Exception as e:
+                self.notify_observers('error', f"Ошибка создания алерта: {e}")
+            
     # Методы подключения
-    def connect_obd(self, protocol: str, port: str) -> bool:
+    def connect_obd(self, protocol: str, port: str, vehicle_id: str = None) -> bool:
         """Подключение к OBD сканеру"""
         try:
             self.connection_status = ConnectionStatus.CONNECTING
@@ -183,7 +261,18 @@ class AppController:
             
             if success:
                 self.connection_status = ConnectionStatus.CONNECTED
+                self.current_protocol = protocol
+                self.current_vehicle_id = vehicle_id or f"vehicle_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                
+                # Создание новой сессии
+                self.current_session_id = self.db_manager.create_session(
+                    vehicle_id=self.current_vehicle_id,
+                    protocol=protocol,
+                    port=port
+                )
+                
                 self._start_data_thread()
+                self.notify_observers('session_started', self.current_session_id)
             else:
                 self.connection_status = ConnectionStatus.ERROR
                 
@@ -200,8 +289,18 @@ class AppController:
         """Отключение от OBD сканера"""
         try:
             self._stop_data_thread()
+            
+            # Завершение сессии
+            if self.current_session_id:
+                self.db_manager.end_session(self.current_session_id)
+                self.notify_observers('session_ended', self.current_session_id)
+                self.current_session_id = None
+                
             self.obd_controller.disconnect()
             self.connection_status = ConnectionStatus.DISCONNECTED
+            self.current_protocol = None
+            self.current_vehicle_id = None
+            
             self.notify_observers('connection_status', self.connection_status)
             
         except Exception as e:
@@ -302,6 +401,10 @@ class AppController:
                 )
                 self.diagnostic_codes.append(diagnostic_code)
                 
+            # Логирование кодов в базу данных
+            if self.current_session_id and codes:
+                self.db_manager.log_diagnostic_codes(self.current_session_id, codes)
+                
             self.diagnostic_status = DiagnosticStatus.COMPLETED
             self.notify_observers('diagnostic_status', self.diagnostic_status)
             self.notify_observers('diagnostic_codes', self.diagnostic_codes)
@@ -335,50 +438,112 @@ class AppController:
         return self.diagnostic_codes.copy()
         
     # Методы экспорта данных
-    def export_data(self, filename: str, format: str = "json") -> bool:
-        """Экспорт данных в файл"""
+    def export_current_session(self, format: str = "json", filename: str = None) -> Optional[str]:
+        """Экспорт текущей сессии"""
+        if not self.current_session_id:
+            self.notify_observers('error', "Нет активной сессии для экспорта")
+            return None
+            
         try:
-            data = {
-                'timestamp': datetime.now().isoformat(),
-                'connection_status': self.connection_status.value,
-                'real_time_data': {
-                    param: {
-                        'name': data.name,
-                        'value': data.value,
-                        'unit': data.unit,
-                        'timestamp': data.timestamp.isoformat(),
-                        'status': data.status
-                    }
-                    for param, data in self.real_time_data.items()
-                },
-                'diagnostic_codes': [
-                    {
-                        'code': code.code,
-                        'description': code.description,
-                        'status': code.status,
-                        'system': code.system,
-                        'severity': code.severity
-                    }
-                    for code in self.diagnostic_codes
-                ],
-                'data_history': {
-                    param: [(ts.isoformat(), val) for ts, val in history]
-                    for param, history in self.data_history.items()
-                }
-            }
-            
             if format.lower() == "json":
-                with open(filename, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, indent=2, ensure_ascii=False)
+                return self.data_exporter.export_session_to_json(self.current_session_id, filename)
+            elif format.lower() == "csv":
+                return self.data_exporter.export_session_to_csv(self.current_session_id, filename)
+            elif format.lower() == "excel":
+                return self.data_exporter.export_session_to_excel(self.current_session_id, filename)
             else:
-                raise ValueError(f"Неподдерживаемый формат: {format}")
+                self.notify_observers('error', f"Неподдерживаемый формат: {format}")
+                return None
                 
-            return True
-            
         except Exception as e:
-            self.notify_observers('error', f"Ошибка экспорта данных: {e}")
-            return False
+            self.notify_observers('error', f"Ошибка экспорта: {e}")
+            return None
             
+    def export_parameter_history(self, parameter: str, format: str = "csv", filename: str = None) -> Optional[str]:
+        """Экспорт истории параметра"""
+        try:
+            return self.data_exporter.export_parameter_history(parameter, format=format, filename=filename)
+        except Exception as e:
+            self.notify_observers('error', f"Ошибка экспорта параметра: {e}")
+            return None
+            
+    def generate_session_report(self, session_id: str = None, filename: str = None) -> Optional[str]:
+        """Генерация отчета по сессии"""
+        target_session = session_id or self.current_session_id
+        
+        if not target_session:
+            self.notify_observers('error', "Нет сессии для генерации отчета")
+            return None
+            
+        try:
+            return self.report_generator.generate_session_report(target_session, filename)
+        except Exception as e:
+            self.notify_observers('error', f"Ошибка генерации отчета: {e}")
+            return None
+            
+    def get_sessions_list(self, limit: int = 50) -> List[tuple]:
+        """Получение списка сессий"""
+        try:
+            return self.db_manager.get_sessions(limit)
+        except Exception as e:
+            self.notify_observers('error', f"Ошибка получения списка сессий: {e}")
+            return []
+            
+    def get_session_data(self, session_id: str) -> Dict[str, Any]:
+        """Получение данных сессии"""
+        try:
+            return self.db_manager.get_session_data(session_id)
+        except Exception as e:
+            self.notify_observers('error', f"Ошибка получения данных сессии: {e}")
+            return {}
+            
+    # Методы настроек
+    def set_update_interval(self, interval: float):
+        """Установка интервала обновления данных"""
+        self.update_interval = max(0.1, interval)
+        
+    def set_auto_logging(self, enabled: bool):
+        """Включение/отключение автоматического логирования"""
+        self.auto_logging = enabled
+        
+    def set_alert_threshold(self, parameter: str, threshold_type: str, value: float):
+        """Установка порога алерта"""
+        if parameter not in self.alert_thresholds:
+            self.alert_thresholds[parameter] = {}
+        self.alert_thresholds[parameter][threshold_type] = value
+        
+    def get_database_stats(self) -> Dict[str, int]:
+        """Получение статистики базы данных"""
+        try:
+            return self.db_manager.get_database_stats()
+        except Exception as e:
+            self.notify_observers('error', f"Ошибка получения статистики БД: {e}")
+            return {}
+            
+    def cleanup_old_data(self, days_to_keep: int = 30):
+        """Очистка старых данных"""
+        try:
+            self.db_manager.cleanup_old_data(days_to_keep)
+            self.data_exporter.cleanup_old_exports(days_to_keep // 4)  # Экспорты храним меньше
+        except Exception as e:
+            self.notify_observers('error', f"Ошибка очистки данных: {e}")
+        
+    def get_connection_status(self) -> ConnectionStatus:
+        """Получение статуса подключения"""
+        return self.connection_status
+        
+    def get_diagnostic_status(self) -> DiagnosticStatus:
+        """Получение статуса диагностики"""
+        return self.diagnostic_status
+        
+    def is_connected(self) -> bool:
+        """Проверка подключения"""
+        return self.connection_status == ConnectionStatus.CONNECTED
+        
+    def get_current_session_id(self) -> Optional[str]:
+        """Получение ID текущей сессии"""
+        return self.current_session_id
+        
     # Методы наблюдателей (Observer pattern)
     def add_observer(self, event_type: str, callback: Callable):
         """Добавление наблюдателя для события"""
@@ -399,23 +564,6 @@ class AppController:
                 except Exception as e:
                     print(f"Ошибка в callback {callback}: {e}")
                     
-    # Методы настроек
-    def set_update_interval(self, interval: float):
-        """Установка интервала обновления данных"""
-        self.update_interval = max(0.1, interval)
-        
-    def get_connection_status(self) -> ConnectionStatus:
-        """Получение статуса подключения"""
-        return self.connection_status
-        
-    def get_diagnostic_status(self) -> DiagnosticStatus:
-        """Получение статуса диагностики"""
-        return self.diagnostic_status
-        
-    def is_connected(self) -> bool:
-        """Проверка подключения"""
-        return self.connection_status == ConnectionStatus.CONNECTED
-        
     def cleanup(self):
         """Очистка ресурсов"""
         self._stop_data_thread()

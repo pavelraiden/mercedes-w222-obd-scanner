@@ -1,12 +1,13 @@
 """
 Обработчик UDS-протокола для Mercedes OBD Scanner
 """
-import can
-import isotp
-from udsoncan.client import Client
-from udsoncan.connections import IsoTPConnection
-from udsoncan.services import ReadDataByIdentifier, ClearDiagnosticInformation
-from udsoncan.exceptions import *
+# import can
+# import isotp
+# from udsoncan.client import Client
+# from udsoncan.connections import IsoTPConnection
+# from udsoncan.services import ReadDataByIdentifier, ClearDiagnosticInformation
+# from udsoncan.exceptions import *
+# Временно отключены для MVP - будут добавлены позже
 from typing import List, Dict, Any, Callable
 
 from .base_handler import ProtocolHandler
@@ -22,17 +23,12 @@ class UDSProtocolHandler(ProtocolHandler):
     def connect(self, port: str, **kwargs) -> bool:
         try:
             self.status_callback("connecting")
-            self.can_bus = can.interface.Bus(channel=port, bustype='socketcan', bitrate=500000)
-            tp_addr = isotp.Address(txid=0x7E0, rxid=0x7E8)
-            stack = isotp.CanStack(self.can_bus, address=tp_addr)
-            self.uds_client = Client(IsoTPConnection(stack), request_timeout=2)
-            self.uds_client.open()
-            self.is_connected = self.uds_client.is_open()
-            if self.is_connected:
-                self.status_callback("connected")
-            else:
-                self.status_callback("error")
-            return self.is_connected
+            # TODO: Реализовать подключение к UDS в будущих версиях
+            # Пока что симулируем подключение
+            print(f"UDS: Simulating connection to {port}")
+            self.is_connected = True
+            self.status_callback("connected")
+            return True
         except Exception as e:
             print(f"UDS connection error: {e}")
             self.is_connected = False
@@ -40,10 +36,7 @@ class UDSProtocolHandler(ProtocolHandler):
             return False
 
     def disconnect(self):
-        if self.uds_client:
-            self.uds_client.close()
-        if self.can_bus:
-            self.can_bus.shutdown()
+        # TODO: Реализовать отключение от UDS
         self.is_connected = False
         self.status_callback("disconnected")
 
@@ -51,22 +44,20 @@ class UDSProtocolHandler(ProtocolHandler):
         if not self.is_connected:
             return
 
-        # Mercedes-специфичные параметры (примеры)
-        # Давление в шинах (Tire Pressure Monitoring System)
-        try:
-            response = self.uds_client.read_data_by_identifier(0xFD47) # Пример DID
-            # Здесь нужна логика парсинга ответа
-            # self.data_callback("tire_pressure_fl", parsed_value, "bar")
-        except Exception as e:
-            print(f"Error reading TPMS: {e}")
-
-        # Напряжение Airmatic
-        try:
-            response = self.uds_client.read_data_by_identifier(0xFD48) # Пример DID
-            # Здесь нужна логика парсинга ответа
-            # self.data_callback("airmatic_voltage", parsed_value, "V")
-        except Exception as e:
-            print(f"Error reading Airmatic voltage: {e}")
+        # TODO: Реализовать чтение Mercedes-специфичных параметров через UDS
+        # Пока что симулируем данные
+        import random
+        import time
+        
+        # Симуляция данных Airmatic
+        self.data_callback("airmatic_pressure_fl", 2.1 + random.uniform(-0.1, 0.1), "bar")
+        self.data_callback("airmatic_pressure_fr", 2.1 + random.uniform(-0.1, 0.1), "bar")
+        self.data_callback("airmatic_pressure_rl", 2.0 + random.uniform(-0.1, 0.1), "bar")
+        self.data_callback("airmatic_pressure_rr", 2.0 + random.uniform(-0.1, 0.1), "bar")
+        
+        # Симуляция данных Magic Body Control
+        self.data_callback("mbc_status", random.choice([0, 1]), "")
+        self.data_callback("suspension_height", 120 + random.uniform(-5, 5), "mm")
 
     def get_diagnostic_codes(self) -> List[Dict[str, Any]]:
         # TODO: Реализовать чтение DTC через UDS
@@ -78,7 +69,6 @@ class UDSProtocolHandler(ProtocolHandler):
 
     @staticmethod
     def get_available_ports() -> List[str]:
-        # python-can не предоставляет простого способа сканирования
-        # Обычно порты известны заранее (например, 'can0')
+        # TODO: Реализовать сканирование CAN портов
         return ['can0', 'can1', 'vcan0']
 
