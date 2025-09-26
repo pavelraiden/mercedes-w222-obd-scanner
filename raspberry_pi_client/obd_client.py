@@ -124,7 +124,6 @@ class LocalCache:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(f"UPDATE obd_readings SET synced = TRUE WHERE id IN ({placeholders})", reading_ids)
-            )
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics"""
