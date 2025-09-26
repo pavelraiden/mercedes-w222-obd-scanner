@@ -39,8 +39,9 @@ tmp_upload_dir = None
 # keyfile = "/path/to/keyfile"
 # certfile = "/path/to/certfile"
 
-# Worker process management
-worker_tmp_dir = os.getenv("WORKER_TMP_DIR", "/tmp")
+# Worker process management - use secure temp directory
+import tempfile
+worker_tmp_dir = os.getenv("WORKER_TMP_DIR", tempfile.gettempdir())
 worker_class = "uvicorn.workers.UvicornWorker"
 
 # Application

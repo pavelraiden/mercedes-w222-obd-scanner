@@ -166,9 +166,15 @@ class DatabaseBackupManager:
                     cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
                     tables = [row[0] for row in cursor.fetchall()]
                 
-                # Export each table
+                # Export each table (using safe table name validation)
                 for table in tables:
-                    cursor = conn.execute(f"SELECT * FROM {table}")
+                    # Validate table name to prevent SQL injection
+                    if not table.replace('_', '').replace('-', '').isalnum():
+                        logger.warning(f"Skipping table with invalid name: {table}")
+                        continue
+                    
+                    # Use quoted identifier for table name safety
+                    cursor = conn.execute(f'SELECT * FROM "{table}"')
                     rows = cursor.fetchall()
                     export_data[table] = [dict(row) for row in rows]
                 
@@ -281,9 +287,26 @@ class FileBackupManager:
                     return False
                 backup_path = decrypted_path
             
-            # Extract archive
+            # Extract archive safely (prevent path traversal attacks)
             with tarfile.open(backup_path, 'r:*') as tar:
-                tar.extractall(restore_path)
+                # Validate all members before extraction
+                safe_members = []
+                for member in tar.getmembers():
+                    # Check for path traversal attempts
+                    if os.path.isabs(member.name) or ".." in member.name:
+                        logger.warning(f"Skipping potentially dangerous member: {member.name}")
+                        continue
+                    
+                    # Ensure member path is within restore directory
+                    member_path = os.path.join(restore_path, member.name)
+                    if not member_path.startswith(os.path.abspath(restore_path)):
+                        logger.warning(f"Skipping member outside restore path: {member.name}")
+                        continue
+                    
+                    safe_members.append(member)
+                
+                # Extract only safe members
+                tar.extractall(restore_path, members=safe_members)
             
             # Clean up decrypted file
             if encryption and os.path.exists(f"{backup_path}.dec"):
